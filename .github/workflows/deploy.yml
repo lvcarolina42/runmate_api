@@ -1,0 +1,46 @@
+name: Deploy runmate_api
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout do repositório
+      uses: actions/checkout@v3
+
+    - name: Setup Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.22'
+
+    - name: Build da aplicação
+      run: |
+        go mod tidy
+        go build -o runmate_api .
+
+    - name: Copiar binário via SSH
+      uses: appleboy/scp-action@v0.1.7
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        port: 22
+        source: "runmate_api"
+        target: "/home/${{ secrets.SSH_USER }}/runmate_api"
+
+    - name: Executar aplicação remotamente
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USER }}
+        key: ${{ secrets.SSH_KEY }}
+        port: 22
+        script: |
+          pkill runmate_api || true
+          cd runmate_api
+          nohup ./runmate_api > output.log 2>&1 &
