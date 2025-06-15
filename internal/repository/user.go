@@ -26,6 +26,16 @@ func (u *User) Create(ctx context.Context, user *entity.User) error {
 	return nil
 }
 
+func (u *User) GetAll(ctx context.Context) ([]*entity.User, error) {
+	var users []*entity.User
+	result := u.db.WithContext(ctx).Find(&users)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get users: %v", result.Error)
+	}
+
+	return users, nil
+}
+
 func (u *User) GetByID(ctx context.Context, id string) (*entity.User, error) {
 	var user entity.User
 	result := u.db.WithContext(ctx).Where("id = ?", id).First(&user)

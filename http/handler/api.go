@@ -2,9 +2,11 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
 	"runmate_api/http/model"
 	"runmate_api/internal/service"
@@ -12,29 +14,29 @@ import (
 
 type api struct {
 	activityService *service.Activity
+	userService     *service.User
 }
 
-func NewAPI(activityService *service.Activity) *api {
-	return &api{activityService: activityService}
+func NewAPI(activityService *service.Activity, userService *service.User) *api {
+	return &api{activityService: activityService, userService: userService}
 }
 
 func (a *api) Routes(r *chi.Mux) {
-	r.Route("/v2", func(r chi.Router) {
-		r.Route("/activities", func(r chi.Router) {
-			r.Get("/", a.getActivities)
-			r.Post("/", a.createActivity)
-			r.Delete("/{id}", a.deleteActivity)
-		})
+	r.Route("/activities", func(r chi.Router) {
+		r.Get("/", a.getActivities)
+		r.Post("/", a.createActivity)
+		r.Delete("/{id}", a.deleteActivity)
+	})
 
-		r.Route("/users", func(r chi.Router) {
-			//r.Post("/", a.createUser)
-			//r.Get("/", a.getUsers)
-			//r.Get("/{id}", a.getUser)
-			//r.Put("/{id}", a.updateUser)
-			//r.Delete("/{id}", a.deleteUser)
+	r.Route("/users", func(r chi.Router) {
+		r.Post("/", a.createUser)
+		r.Get("/", a.getUsers)
+		r.Get("/{id}", a.getUserByID)
+		r.Get("/{username: [a-zA-Z0-9_]+}", a.getUserByUsername)
+		r.Put("/{id}", a.updateUser)
+		r.Delete("/{id}", a.deleteUser)
 
-			r.Get("/{id}/activities", a.getUserActivities)
-		})
+		r.Get("/{id}/activities", a.getUserActivities)
 	})
 }
 
@@ -107,6 +109,132 @@ func (a *api) getUserActivities(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) createUser(w http.ResponseWriter, r *http.Request) {
+	var input model.CreateUserInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user := input.ToEntity()
+
+	err = a.userService.Create(r.Context(), user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (a *api) getUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := a.userService.ListAll(r.Context())
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := make([]*model.User, 0, len(users))
+	for _, user := range users {
+		result = append(result, model.NewUserFromEntity(user))
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) getUserByID(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	user, err := a.userService.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := model.NewUserFromEntity(user)
+	if result == nil {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) getUserByUsername(w http.ResponseWriter, r *http.Request) {
+	username := chi.URLParam(r, "username")
+	user, err := a.userService.GetByUsername(r.Context(), username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := model.NewUserFromEntity(user)
+	if result == nil {
+		http.Error(w, "user not found", http.StatusNotFound)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) updateUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var input model.CreateUserInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	user := input.ToEntity()
+	user.ID, err = uuid.Parse(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = a.userService.Update(r.Context(), user)
+	if err != nil {
+		if errors.Is(err, service.ErrUserNotFound) {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) deleteUser(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	err := a.userService.Delete(r.Context(), id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

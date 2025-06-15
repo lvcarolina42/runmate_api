@@ -5,6 +5,15 @@ import (
 	"os"
 )
 
+const (
+	Dev  = "dev"
+	Prod = "prod"
+)
+
+func Env() string {
+	return os.Getenv("ENV")
+}
+
 func DatabaseHost() string {
 	return os.Getenv("DB_HOST")
 }
@@ -26,7 +35,11 @@ func DatabaseName() string {
 }
 
 func DatabaseURL() string {
-	return fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", DatabaseHost(), DatabaseUser(), DatabasePassword(), DatabaseName(), DatabasePort())
+	url := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s", DatabaseHost(), DatabaseUser(), DatabasePassword(), DatabaseName(), DatabasePort())
+	if Env() == Dev {
+		url += " sslmode=disable"
+	}
+	return url
 }
 
 func APIPort() string {

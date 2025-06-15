@@ -2,9 +2,14 @@ package service
 
 import (
 	"context"
+	"errors"
 
 	"runmate_api/internal/entity"
 	"runmate_api/internal/repository"
+)
+
+var (
+	ErrUserNotFound = errors.New("user not found")
 )
 
 type User struct {
@@ -16,7 +21,15 @@ func NewUser(repo *repository.User) *User {
 }
 
 func (u *User) Create(ctx context.Context, user *entity.User) error {
+	if err := user.Validate(); err != nil {
+		return err
+	}
+
 	return u.repo.Create(ctx, user)
+}
+
+func (u *User) ListAll(ctx context.Context) ([]*entity.User, error) {
+	return u.repo.GetAll(ctx)
 }
 
 func (u *User) GetByID(ctx context.Context, id string) (*entity.User, error) {
@@ -32,6 +45,19 @@ func (u *User) GetByEmail(ctx context.Context, email string) (*entity.User, erro
 }
 
 func (u *User) Update(ctx context.Context, user *entity.User) error {
+	currentUser, err := u.GetByID(ctx, user.ID.String())
+	if err != nil {
+		return err
+	}
+
+	if currentUser == nil {
+		return ErrUserNotFound
+	}
+
+	if err := user.Validate(); err != nil {
+		return err
+	}
+
 	return u.repo.Update(ctx, user)
 }
 

@@ -8,6 +8,11 @@ services:
       POSTGRES_PASSWORD: runmate
     ports:
       - "5432:5432"
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -d postgres" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   adminer:
     image: adminer

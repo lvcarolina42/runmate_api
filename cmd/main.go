@@ -28,14 +28,22 @@ func main() {
 		log.Fatalf("failed to connect database %v", err)
 	}
 
-	err = db.AutoMigrate(&entity.Activity{}, &entity.Coordinate{})
+	err = db.AutoMigrate(
+		&entity.Activity{},
+		&entity.Coordinate{},
+		&entity.User{},
+	)
 	if err != nil {
 		log.Fatalf("failed to migrate database %v", err)
 	}
 
 	activityRepo := repository.NewActivity(db)
+	userRepo := repository.NewUser(db)
+
 	activityService := service.NewActivity(activityRepo)
-	api := handler.NewAPI(activityService)
+	userService := service.NewUser(userRepo)
+
+	api := handler.NewAPI(activityService, userService)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger, middleware.RealIP, middleware.Recoverer, middleware.RequestID)
