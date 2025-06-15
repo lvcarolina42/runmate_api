@@ -1,4 +1,4 @@
-name: Deploy runmate_api
+name: Deploy to Fly.io
 
 on:
   push:
@@ -10,37 +10,16 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout do repositório
-      uses: actions/checkout@v3
+    - uses: actions/checkout@v3
 
-    - name: Setup Go
-      uses: actions/setup-go@v5
-      with:
-        go-version: '1.22'
-
-    - name: Build da aplicação
+    - name: Instalar Fly CLI
       run: |
-        go mod tidy
-        go build -o runmate_api .
+        curl -L https://fly.io/install.sh | sh
+        export FLYCTL_INSTALL="/home/runner/.fly"
+        export PATH="$FLYCTL_INSTALL/bin:$PATH"
 
-    - name: Copiar binário via SSH
-      uses: appleboy/scp-action@v0.1.7
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_KEY }}
-        port: 22
-        source: "runmate_api"
-        target: "/home/${{ secrets.SSH_USER }}/runmate_api"
-
-    - name: Executar aplicação remotamente
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_KEY }}
-        port: 22
-        script: |
-          pkill runmate_api || true
-          cd runmate_api
-          nohup ./runmate_api > output.log 2>&1 &
+    - name: Deploy na Fly.io
+      env:
+        FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      run: |
+        fly deploy --remote-only
