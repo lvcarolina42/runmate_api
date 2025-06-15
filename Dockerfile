@@ -1,16 +1,14 @@
-# Dockerfile
-FROM golang:1.22-alpine
-
+FROM golang:latest AS builder
 WORKDIR /app
 
-COPY go.mod ./
-COPY go.sum ./
-RUN go mod download
+COPY . /app
+RUN CGO_ENABLED=0 GOOS=linux go build -o main ./cmd/main.go
 
-COPY . .
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
 
-RUN go build -o runmate_api
+WORKDIR /app
+COPY --from=builder /app/main ./
 
-EXPOSE 8080
-
-CMD ["./runmate_api"]
+EXPOSE 3000
+CMD ["./main"]
