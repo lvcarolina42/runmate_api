@@ -36,8 +36,8 @@ func (a *api) Routes(r *chi.Mux) {
 	r.Route("/users", func(r chi.Router) {
 		r.Post("/", a.createUser)
 		r.Get("/", a.getUsers)
-		r.Get("/{id: [a-zA-Z0-9_]{36}}", a.getUserByID)
-		r.Get("/{username: [a-zA-Z0-9_]+}", a.getUserByUsername)
+		r.Get("/{username:[a-zA-Z0-9_]+}", a.getUserByUsername)
+		r.Get("/{id:[a-zA-Z0-9\\-]{36}}", a.getUserByID)
 		r.Put("/{id}", a.updateUser)
 		r.Delete("/{id}", a.deleteUser)
 
