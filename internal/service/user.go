@@ -61,17 +61,21 @@ func (u *User) Delete(ctx context.Context, id string) error {
 	return u.repo.Delete(ctx, id)
 }
 
-func (u *User) Authenticate(ctx context.Context, username, password string) (bool, error) {
+func (u *User) Authenticate(ctx context.Context, username, password string) (*entity.User, error) {
 	user, err := u.GetByUsername(ctx, username)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	if user == nil {
-		return false, nil
+		return nil, nil
 	}
 
-	return user.Password == password, nil
+	if user.Password != password {
+		return nil, nil
+	}
+
+	return user, nil
 }
 
 func (u *User) AddFriend(ctx context.Context, userID, friendID string) error {

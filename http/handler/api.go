@@ -429,14 +429,20 @@ func (a *api) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	authenticated, err := a.userService.Authenticate(r.Context(), input.Username, input.Password)
+	user, err := a.userService.Authenticate(r.Context(), input.Username, input.Password)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if !authenticated {
+	if user == nil {
 		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(model.NewUserFromEntity(user))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
