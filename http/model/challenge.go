@@ -2,8 +2,11 @@ package model
 
 import (
 	"errors"
+	"fmt"
 	"runmate_api/internal/entity"
 	"time"
+
+	"github.com/google/uuid"
 )
 
 type ChallengeType string
@@ -42,6 +45,7 @@ var (
 	ErrInvalidChallengeType     = errors.New("invalid challenge type")
 	ErrEndDateRequired          = errors.New("end date is required")
 	ErrTotalDistanceNotRequired = errors.New("total distance is not required")
+	ErrEndDateBeforeStartDate   = errors.New("end date must be after start date")
 )
 
 type Challenge struct {
@@ -49,12 +53,20 @@ type Challenge struct {
 	Title         string        `json:"title"`
 	Description   string        `json:"description"`
 	StartDate     time.Time     `json:"start_date"`
-	EndDate       *time.Time    `json:"end_date"`
-	TotalDistance *int          `json:"total_distance"`
+	EndDate       *time.Time    `json:"end_date,omitempty"`
+	TotalDistance *int          `json:"total_distance,omitempty"`
 	Type          ChallengeType `json:"type"`
+	Finished      bool          `json:"finished"`
 }
 
 func NewChallengeFromEntity(c *entity.Challenge) *Challenge {
+	var finished bool
+	if c.Type == entity.ChallengeTypeDistance {
+		finished = c.EndDate != nil
+	} else if c.Type == entity.ChallengeTypeDate {
+		finished = c.EndDate != nil && c.EndDate.Before(time.Now())
+	}
+
 	return &Challenge{
 		ID:            c.ID.String(),
 		Title:         c.Title,
@@ -63,6 +75,7 @@ func NewChallengeFromEntity(c *entity.Challenge) *Challenge {
 		EndDate:       c.EndDate,
 		TotalDistance: c.TotalDistance,
 		Type:          NewChallengeTypeFromEntity(c.Type),
+		Finished:      finished,
 	}
 }
 
@@ -103,12 +116,21 @@ func (c *CreateChallengeInput) Validate() error {
 		if c.TotalDistance != nil {
 			return ErrTotalDistanceNotRequired
 		}
+
+		if c.EndDate.Before(c.StartDate) {
+			return ErrEndDateBeforeStartDate
+		}
 	}
 
 	return nil
 }
 
-func (c *CreateChallengeInput) ToEntity() *entity.Challenge {
+func (c *CreateChallengeInput) ToEntity() (*entity.Challenge, error) {
+	userID, err := uuid.Parse(c.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse user id: %v", err)
+	}
+
 	return &entity.Challenge{
 		Title:         c.Title,
 		Description:   c.Description,
@@ -116,5 +138,6 @@ func (c *CreateChallengeInput) ToEntity() *entity.Challenge {
 		EndDate:       c.EndDate,
 		TotalDistance: c.TotalDistance,
 		Type:          c.Type.ToEntity(),
-	}
+		CreatedBy:     userID,
+	}, nil
 }

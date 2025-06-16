@@ -36,22 +36,23 @@ func (c *Challenge) GetByID(ctx context.Context, id string) (*entity.Challenge, 
 	return &challenge, nil
 }
 
-func (c *Challenge) AddEvent(ctx context.Context, challenge *entity.Challenge, event *entity.ChallengeEvent) error {
-	err := c.db.WithContext(ctx).Model(&challenge).Association("Events").Append(event)
-	if err != nil {
-		return fmt.Errorf("failed to add event to challenge: %v", err)
+func (c *Challenge) Update(ctx context.Context, challenge *entity.Challenge) error {
+	result := c.db.WithContext(ctx).Save(challenge)
+	if result.Error != nil {
+		return fmt.Errorf("failed to update challenge: %v", result.Error)
 	}
 
 	return nil
 }
 
-func (c *Challenge) AddUser(ctx context.Context, challenge *entity.Challenge, user *entity.User) error {
-	err := c.db.WithContext(ctx).Model(&challenge).Association("Users").Append(user)
+func (c *Challenge) GetAllActiveByUser(ctx context.Context, user *entity.User) ([]*entity.Challenge, error) {
+	var challenges []*entity.Challenge
+	err := c.db.WithContext(ctx).Model(&user).Where("end_date IS NULL OR end_date > NOW()").Association("Challenges").Find(&challenges)
 	if err != nil {
-		return fmt.Errorf("failed to add user to challenge: %v", err)
+		return nil, fmt.Errorf("failed to get challenges: %v", err)
 	}
 
-	return nil
+	return challenges, nil
 }
 
 func (c *Challenge) GetAllByUser(ctx context.Context, user *entity.User) ([]*entity.Challenge, error) {
@@ -62,4 +63,32 @@ func (c *Challenge) GetAllByUser(ctx context.Context, user *entity.User) ([]*ent
 	}
 
 	return challenges, nil
+}
+
+func (c *Challenge) AddEvent(ctx context.Context, challenge *entity.Challenge, event *entity.ChallengeEvent) error {
+	err := c.db.WithContext(ctx).Model(&challenge).Association("Events").Append(event)
+	if err != nil {
+		return fmt.Errorf("failed to add event to challenge: %v", err)
+	}
+
+	return nil
+}
+
+func (c *Challenge) GetAllEventsByUser(ctx context.Context, challenge *entity.Challenge, user *entity.User) ([]*entity.ChallengeEvent, error) {
+	var events []*entity.ChallengeEvent
+	err := c.db.WithContext(ctx).Model(&challenge).Association("Events").Find(&events)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get events: %v", err)
+	}
+
+	return events, nil
+}
+
+func (c *Challenge) AddUser(ctx context.Context, challenge *entity.Challenge, user *entity.User) error {
+	err := c.db.WithContext(ctx).Model(&challenge).Association("Users").Append(user)
+	if err != nil {
+		return fmt.Errorf("failed to add user to challenge: %v", err)
+	}
+
+	return nil
 }

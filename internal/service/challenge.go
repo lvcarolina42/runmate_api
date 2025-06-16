@@ -21,8 +21,8 @@ func NewChallenge(challengeRepo *repository.Challenge, userRepo *repository.User
 	return &Challenge{challengeRepo: challengeRepo, userRepo: userRepo}
 }
 
-func (c *Challenge) Create(ctx context.Context, challenge *entity.Challenge, userID string) error {
-	user, err := c.userRepo.GetByID(ctx, userID)
+func (c *Challenge) Create(ctx context.Context, challenge *entity.Challenge) error {
+	user, err := c.userRepo.GetByID(ctx, challenge.CreatedBy.String())
 	if err != nil {
 		return err
 	}
@@ -37,6 +37,32 @@ func (c *Challenge) Create(ctx context.Context, challenge *entity.Challenge, use
 
 func (c *Challenge) GetByID(ctx context.Context, id string) (*entity.Challenge, error) {
 	return c.challengeRepo.GetByID(ctx, id)
+}
+
+func (c *Challenge) ListAllActiveByUserID(ctx context.Context, userID string) ([]*entity.Challenge, error) {
+	user, err := c.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	return c.challengeRepo.GetAllActiveByUser(ctx, user)
+}
+
+func (c *Challenge) ListAllByUserID(ctx context.Context, userID string) ([]*entity.Challenge, error) {
+	user, err := c.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	return c.challengeRepo.GetAllByUser(ctx, user)
 }
 
 func (c *Challenge) AddEvent(ctx context.Context, challengeID string, event *entity.ChallengeEvent) error {
@@ -64,17 +90,4 @@ func (c *Challenge) AddUser(ctx context.Context, challengeID string, user *entit
 	}
 
 	return c.challengeRepo.AddUser(ctx, challenge, user)
-}
-
-func (c *Challenge) ListAllByUserID(ctx context.Context, userID string) ([]*entity.Challenge, error) {
-	user, err := c.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		return nil, err
-	}
-
-	if user == nil {
-		return nil, ErrUserNotFound
-	}
-
-	return c.challengeRepo.GetAllByUser(ctx, user)
 }

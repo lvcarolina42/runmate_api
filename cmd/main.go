@@ -43,7 +43,7 @@ func main() {
 	challengeRepo := repository.NewChallenge(db)
 	userRepo := repository.NewUser(db)
 
-	activityService := service.NewActivity(activityRepo)
+	activityService := service.NewActivity(activityRepo, challengeRepo, userRepo)
 	challengeService := service.NewChallenge(challengeRepo, userRepo)
 	userService := service.NewUser(userRepo)
 

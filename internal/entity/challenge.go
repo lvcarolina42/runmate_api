@@ -21,7 +21,7 @@ type Challenge struct {
 	EndDate       *time.Time
 	Type          ChallengeType
 	TotalDistance *int
-	CreatedBy     *User `gorm:"references:ID;constraint:OnDelete:CASCADE"` // TODO: FIX RELATION
+	CreatedBy     uuid.UUID
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
 	Users         []*User           `gorm:"many2many:user_challenges;constraint:OnDelete:CASCADE"`

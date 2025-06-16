@@ -66,7 +66,7 @@ func (a *api) Routes(r *chi.Mux) {
 }
 
 func (a *api) createActivity(w http.ResponseWriter, r *http.Request) {
-	var input model.Activity
+	var input model.CreateActivityInput
 	err := json.NewDecoder(r.Body).Decode(&input)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -156,9 +156,13 @@ func (a *api) createChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	challenge := input.ToEntity()
+	challenge, err := input.ToEntity()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 
-	err = a.challengeService.Create(r.Context(), challenge, input.UserID)
+	err = a.challengeService.Create(r.Context(), challenge)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -191,7 +195,13 @@ func (a *api) getChallenge(w http.ResponseWriter, r *http.Request) {
 
 func (a *api) getUserChallenges(w http.ResponseWriter, r *http.Request) {
 	userID := chi.URLParam(r, "id")
-	challenges, err := a.challengeService.ListAllByUserID(r.Context(), userID)
+
+	listChallengesFunc := a.challengeService.ListAllByUserID
+	if r.URL.Query().Get("active") == "1" {
+		listChallengesFunc = a.challengeService.ListAllActiveByUserID
+	}
+
+	challenges, err := listChallengesFunc(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

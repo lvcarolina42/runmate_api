@@ -18,18 +18,20 @@ var (
 )
 
 type User struct {
-	ID              uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	Username        string    `gorm:"unique"`
-	Email           string    `gorm:"unique"`
-	Password        string
-	Name            string
-	Role            int8
-	Birthdate       time.Time
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-	Friends         []*User           `gorm:"many2many:user_friends;constraint:OnDelete:CASCADE"`
-	Challenges      []*Challenge      `gorm:"many2many:user_challenges;constraint:OnDelete:CASCADE"`
-	ChallengeEvents []*ChallengeEvent `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	ID                uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
+	Username          string    `gorm:"unique"`
+	Email             string    `gorm:"unique"`
+	Password          string
+	Name              string
+	Role              int8
+	Birthdate         time.Time
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
+	Activities        []*Activity       `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Friends           []*User           `gorm:"many2many:user_friends;constraint:OnDelete:CASCADE"`
+	Challenges        []*Challenge      `gorm:"many2many:user_challenges;constraint:OnDelete:CASCADE"`
+	CreatedChallenges []*Challenge      `gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE"`
+	ChallengeEvents   []*ChallengeEvent `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 func (u *User) Validate() error {
