@@ -38,6 +38,8 @@ func (a *api) Routes(r *chi.Mux) {
 
 		r.Get("/{id}/activities", a.getUserActivities)
 	})
+
+	r.Post("/login", a.login)
 }
 
 func (a *api) createActivity(w http.ResponseWriter, r *http.Request) {
@@ -241,4 +243,26 @@ func (a *api) deleteUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) login(w http.ResponseWriter, r *http.Request) {
+	var input model.LoginInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	authenticated, err := a.userService.Authenticate(r.Context(), input.Username, input.Password)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if !authenticated {
+		http.Error(w, "unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }

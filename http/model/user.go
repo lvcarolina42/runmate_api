@@ -15,7 +15,6 @@ type User struct {
 	Role      int8      `json:"role"`
 }
 
-
 func NewUserFromEntity(user *entity.User) *User {
 	return &User{
 		ID:        user.ID.String(),
@@ -35,7 +34,7 @@ type CreateUserInput struct {
 	Birthdate time.Time `json:"birthdate"`
 }
 
-func (c *CreateUserInput) ToEntity() (*entity.User) {
+func (c *CreateUserInput) ToEntity() *entity.User {
 	return &entity.User{
 		Username:  c.Username,
 		Name:      c.Name,
@@ -44,4 +43,9 @@ func (c *CreateUserInput) ToEntity() (*entity.User) {
 		Birthdate: c.Birthdate,
 		Role:      0,
 	}
+}
+
+type LoginInput struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }

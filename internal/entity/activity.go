@@ -8,7 +8,7 @@ import (
 
 type Activity struct {
 	ID          uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	UserID      uuid.UUID
+	UserID      uuid.UUID `gorm:"type:uuid;not null"`
 	Title       string
 	Date        time.Time
 	Duration    int
@@ -18,7 +18,7 @@ type Activity struct {
 
 type Coordinate struct {
 	ID         uuid.UUID `gorm:"type:uuid;default:gen_random_uuid();primaryKey"`
-	ActivityID uuid.UUID // This field is used as a foreign key.
+	ActivityID uuid.UUID `gorm:"type:uuid;not null"`
 	Lat        float64
 	Long       float64
 	Order      int

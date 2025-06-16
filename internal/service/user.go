@@ -40,10 +40,6 @@ func (u *User) GetByUsername(ctx context.Context, username string) (*entity.User
 	return u.repo.GetByUsername(ctx, username)
 }
 
-func (u *User) GetByEmail(ctx context.Context, email string) (*entity.User, error) {
-	return u.repo.GetByEmail(ctx, email)
-}
-
 func (u *User) Update(ctx context.Context, user *entity.User) error {
 	currentUser, err := u.GetByID(ctx, user.ID.String())
 	if err != nil {
@@ -63,4 +59,17 @@ func (u *User) Update(ctx context.Context, user *entity.User) error {
 
 func (u *User) Delete(ctx context.Context, id string) error {
 	return u.repo.Delete(ctx, id)
+}
+
+func (u *User) Authenticate(ctx context.Context, username, password string) (bool, error) {
+	user, err := u.GetByUsername(ctx, username)
+	if err != nil {
+		return false, err
+	}
+
+	if user == nil {
+		return false, nil
+	}
+
+	return user.Password == password, nil
 }
