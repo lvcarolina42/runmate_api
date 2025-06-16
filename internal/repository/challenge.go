@@ -1,0 +1,65 @@
+package repository
+
+import (
+	"context"
+	"fmt"
+
+	"runmate_api/internal/entity"
+
+	"gorm.io/gorm"
+)
+
+type Challenge struct {
+	db *gorm.DB
+}
+
+func NewChallenge(db *gorm.DB) *Challenge {
+	return &Challenge{db: db}
+}
+
+func (c *Challenge) Create(ctx context.Context, challenge *entity.Challenge) error {
+	result := c.db.WithContext(ctx).Create(challenge)
+	if result.Error != nil {
+		return fmt.Errorf("failed to create challenge: %v", result.Error)
+	}
+
+	return nil
+}
+
+func (c *Challenge) GetByID(ctx context.Context, id string) (*entity.Challenge, error) {
+	var challenge entity.Challenge
+	result := c.db.WithContext(ctx).Where("id = ?", id).First(&challenge)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get challenge %s: %v", id, result.Error)
+	}
+
+	return &challenge, nil
+}
+
+func (c *Challenge) AddEvent(ctx context.Context, challenge *entity.Challenge, event *entity.ChallengeEvent) error {
+	err := c.db.WithContext(ctx).Model(&challenge).Association("Events").Append(event)
+	if err != nil {
+		return fmt.Errorf("failed to add event to challenge: %v", err)
+	}
+
+	return nil
+}
+
+func (c *Challenge) AddUser(ctx context.Context, challenge *entity.Challenge, user *entity.User) error {
+	err := c.db.WithContext(ctx).Model(&challenge).Association("Users").Append(user)
+	if err != nil {
+		return fmt.Errorf("failed to add user to challenge: %v", err)
+	}
+
+	return nil
+}
+
+func (c *Challenge) GetAllByUser(ctx context.Context, user *entity.User) ([]*entity.Challenge, error) {
+	var challenges []*entity.Challenge
+	err := c.db.WithContext(ctx).Model(&user).Association("Challenges").Find(&challenges)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get challenges: %v", err)
+	}
+
+	return challenges, nil
+}

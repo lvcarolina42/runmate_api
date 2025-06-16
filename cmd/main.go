@@ -30,6 +30,8 @@ func main() {
 
 	err = db.AutoMigrate(
 		&entity.Activity{},
+		&entity.Challenge{},
+		&entity.ChallengeEvent{},
 		&entity.Coordinate{},
 		&entity.User{},
 	)
@@ -38,12 +40,14 @@ func main() {
 	}
 
 	activityRepo := repository.NewActivity(db)
+	challengeRepo := repository.NewChallenge(db)
 	userRepo := repository.NewUser(db)
 
 	activityService := service.NewActivity(activityRepo)
+	challengeService := service.NewChallenge(challengeRepo, userRepo)
 	userService := service.NewUser(userRepo)
 
-	api := handler.NewAPI(activityService, userService)
+	api := handler.NewAPI(activityService, challengeService, userService)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger, middleware.RealIP, middleware.Recoverer, middleware.RequestID)

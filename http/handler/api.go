@@ -13,12 +13,21 @@ import (
 )
 
 type api struct {
-	activityService *service.Activity
-	userService     *service.User
+	activityService  *service.Activity
+	challengeService *service.Challenge
+	userService      *service.User
 }
 
-func NewAPI(activityService *service.Activity, userService *service.User) *api {
-	return &api{activityService: activityService, userService: userService}
+func NewAPI(
+	activityService *service.Activity,
+	challengeService *service.Challenge,
+	userService *service.User,
+) *api {
+	return &api{
+		activityService:  activityService,
+		challengeService: challengeService,
+		userService:      userService,
+	}
 }
 
 func (a *api) Routes(r *chi.Mux) {
@@ -26,6 +35,11 @@ func (a *api) Routes(r *chi.Mux) {
 		r.Get("/", a.getActivities)
 		r.Post("/", a.createActivity)
 		r.Delete("/{id}", a.deleteActivity)
+	})
+
+	r.Route("/challenges", func(r chi.Router) {
+		r.Post("/", a.createChallenge)
+		r.Get("/{id}", a.getChallenge)
 	})
 
 	r.Route("/friends", func(r chi.Router) {
@@ -42,6 +56,8 @@ func (a *api) Routes(r *chi.Mux) {
 		r.Delete("/{id}", a.deleteUser)
 
 		r.Get("/{id}/activities", a.getUserActivities)
+
+		r.Get("/{id}/challenges", a.getUserChallenges)
 
 		r.Get("/{id}/friends", a.listFriends)
 	})
@@ -115,6 +131,75 @@ func (a *api) getUserActivities(w http.ResponseWriter, r *http.Request) {
 	result := make([]*model.Activity, 0, len(activities))
 	for _, activity := range activities {
 		result = append(result, model.NewActivityFromEntity(activity))
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) createChallenge(w http.ResponseWriter, r *http.Request) {
+	var input *model.CreateChallengeInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = input.Validate()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	challenge := input.ToEntity()
+
+	err = a.challengeService.Create(r.Context(), challenge, input.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (a *api) getChallenge(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	challenge, err := a.challengeService.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if challenge == nil {
+		http.Error(w, "challenge not found", http.StatusNotFound)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(model.NewChallengeFromEntity(challenge))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) getUserChallenges(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "id")
+	challenges, err := a.challengeService.ListAllByUserID(r.Context(), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := make([]*model.Challenge, 0, len(challenges))
+	for _, challenge := range challenges {
+		result = append(result, model.NewChallengeFromEntity(challenge))
 	}
 
 	err = json.NewEncoder(w).Encode(result)
