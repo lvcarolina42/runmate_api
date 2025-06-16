@@ -28,6 +28,11 @@ func (a *api) Routes(r *chi.Mux) {
 		r.Delete("/{id}", a.deleteActivity)
 	})
 
+	r.Route("/friends", func(r chi.Router) {
+		r.Post("/", a.addFriend)
+		r.Delete("/", a.removeFriend)
+	})
+
 	r.Route("/users", func(r chi.Router) {
 		r.Post("/", a.createUser)
 		r.Get("/", a.getUsers)
@@ -37,6 +42,8 @@ func (a *api) Routes(r *chi.Mux) {
 		r.Delete("/{id}", a.deleteUser)
 
 		r.Get("/{id}/activities", a.getUserActivities)
+
+		r.Get("/{id}/friends", a.listFriends)
 	})
 
 	r.Post("/login", a.login)
@@ -237,6 +244,62 @@ func (a *api) updateUser(w http.ResponseWriter, r *http.Request) {
 func (a *api) deleteUser(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
 	err := a.userService.Delete(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) addFriend(w http.ResponseWriter, r *http.Request) {
+	var input model.FriendInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = a.userService.AddFriend(r.Context(), input.UserID, input.FriendID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) listFriends(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	friends, err := a.userService.ListFriends(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := make([]*model.User, 0, len(friends))
+	for _, friend := range friends {
+		result = append(result, model.NewUserFromEntity(friend))
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) removeFriend(w http.ResponseWriter, r *http.Request) {
+	var input model.FriendInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = a.userService.RemoveFriend(r.Context(), input.UserID, input.FriendID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

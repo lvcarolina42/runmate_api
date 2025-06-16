@@ -73,3 +73,64 @@ func (u *User) Authenticate(ctx context.Context, username, password string) (boo
 
 	return user.Password == password, nil
 }
+
+func (u *User) AddFriend(ctx context.Context, userID, friendID string) error {
+	user, err := u.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if user == nil {
+		return ErrUserNotFound
+	}
+
+	friend, err := u.GetByID(ctx, friendID)
+	if err != nil {
+		return err
+	}
+
+	if friend == nil {
+		return ErrUserNotFound
+	}
+
+	if user.ID == friend.ID {
+		return errors.New("user and friend are the same")
+	}
+
+	return u.repo.CreateFriend(ctx, user, friend)
+}
+
+func (u *User) ListFriends(ctx context.Context, userID string) ([]*entity.User, error) {
+	user, err := u.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	return u.repo.ListFriends(ctx, user)
+}
+
+func (u *User) RemoveFriend(ctx context.Context, userID, friendID string) error {
+	user, err := u.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if user == nil {
+		return ErrUserNotFound
+	}
+
+	friend, err := u.GetByID(ctx, friendID)
+	if err != nil {
+		return err
+	}
+
+	if friend == nil {
+		return ErrUserNotFound
+	}
+
+	return u.repo.DeleteFriend(ctx, user, friend)
+}

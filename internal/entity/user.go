@@ -27,6 +27,7 @@ type User struct {
 	Birthdate time.Time
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	Friends   []*User `gorm:"many2many:user_friends;constraint:OnDelete:CASCADE"`
 }
 
 func (u *User) Validate() error {

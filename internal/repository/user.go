@@ -83,3 +83,31 @@ func (u *User) Delete(ctx context.Context, id string) error {
 
 	return nil
 }
+
+func (u *User) CreateFriend(ctx context.Context, user, friend *entity.User) error {
+	err := u.db.WithContext(ctx).Model(&user).Association("Friends").Append(friend)
+	if err != nil {
+		return fmt.Errorf("failed to create friend: %v", err)
+	}
+
+	return nil
+}
+
+func (u *User) ListFriends(ctx context.Context, user *entity.User) ([]*entity.User, error) {
+	var friends []*entity.User
+	err := u.db.WithContext(ctx).Model(&user).Association("Friends").Find(&friends)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list friends: %v", err)
+	}
+
+	return friends, nil
+}
+
+func (u *User) DeleteFriend(ctx context.Context, user, friend *entity.User) error {
+	err := u.db.WithContext(ctx).Model(&user).Association("Friends").Delete(friend)
+	if err != nil {
+		return fmt.Errorf("failed to delete friend: %v", err)
+	}
+
+	return nil
+}

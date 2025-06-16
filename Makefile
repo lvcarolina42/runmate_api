@@ -5,7 +5,7 @@ deps-down:
 	@docker compose down -v --remove-orphans
 
 run: deps
-	@sleep 2
+	@sleep 1
 	@go run cmd/main.go
 
 .PHONY: deps runs

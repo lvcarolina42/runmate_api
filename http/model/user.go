@@ -45,6 +45,11 @@ func (c *CreateUserInput) ToEntity() *entity.User {
 	}
 }
 
+type FriendInput struct {
+	UserID   string `json:"user_id"`
+	FriendID string `json:"friend_id"`
+}
+
 type LoginInput struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
