@@ -185,7 +185,13 @@ func (a *api) getChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(w).Encode(model.NewChallengeFromEntity(challenge))
+	ranking, err := a.challengeService.GetRanking(r.Context(), challenge)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(model.NewChallengeFromEntity(challenge, ranking))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -227,7 +233,13 @@ func (a *api) getUserChallenges(w http.ResponseWriter, r *http.Request) {
 
 	result := make([]*model.Challenge, 0, len(challenges))
 	for _, challenge := range challenges {
-		result = append(result, model.NewChallengeFromEntity(challenge))
+		ranking, err := a.challengeService.GetRanking(r.Context(), challenge)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		result = append(result, model.NewChallengeFromEntity(challenge, ranking))
 	}
 
 	err = json.NewEncoder(w).Encode(result)

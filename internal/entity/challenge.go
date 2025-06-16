@@ -35,3 +35,14 @@ type ChallengeEvent struct {
 	Distance    int
 	Date        time.Time
 }
+
+type ChallengeRankingResult struct {
+	UserID   uuid.UUID
+	Distance int
+}
+
+type ChallengeRanking struct {
+	User     *User
+	Position int
+	Distance int
+}

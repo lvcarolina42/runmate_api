@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"runmate_api/internal/entity"
 	"runmate_api/internal/repository"
@@ -77,6 +78,34 @@ func (c *Challenge) AddEvent(ctx context.Context, challengeID string, event *ent
 
 	event.ChallengeID = challenge.ID
 	return c.challengeRepo.AddEvent(ctx, challenge, event)
+}
+
+func (c *Challenge) GetRanking(ctx context.Context, challenge *entity.Challenge) ([]*entity.ChallengeRanking, error) {
+	rankingItems, err := c.challengeRepo.GetRanking(ctx, challenge)
+	if err != nil {
+		return nil, err
+	}
+
+	ranking := make([]*entity.ChallengeRanking, 0, len(rankingItems))
+	for i, item := range rankingItems {
+		fmt.Printf("item: %v\n", item)
+		user, err := c.userRepo.GetByID(ctx, item.UserID.String())
+		if err != nil {
+			return nil, err
+		}
+
+		if user == nil {
+			return nil, ErrUserNotFound
+		}
+
+		ranking = append(ranking, &entity.ChallengeRanking{
+			User:     user,
+			Position: i,
+			Distance: item.Distance,
+		})
+	}
+
+	return ranking, nil
 }
 
 func (c *Challenge) Join(ctx context.Context, challengeID, userID string) error {

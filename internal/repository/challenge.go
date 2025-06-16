@@ -92,3 +92,22 @@ func (c *Challenge) AddUser(ctx context.Context, challenge *entity.Challenge, us
 
 	return nil
 }
+
+func (c *Challenge) GetRanking(ctx context.Context, challenge *entity.Challenge) ([]*entity.ChallengeRankingResult, error) {
+	var results []*entity.ChallengeRankingResult
+	err := c.db.
+		WithContext(ctx).
+		Table("challenge_events").
+		Select("user_id, SUM(distance) AS distance").
+		Where("challenge_id = ?", challenge.ID).
+		Group("user_id").
+		Group("challenge_id").
+		Order("distance DESC").
+		Scan(&results).
+		Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get rankings: %v", err)
+	}
+
+	return results, nil
+}

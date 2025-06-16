@@ -49,17 +49,18 @@ var (
 )
 
 type Challenge struct {
-	ID            string        `json:"id"`
-	Title         string        `json:"title"`
-	Description   string        `json:"description"`
-	StartDate     time.Time     `json:"start_date"`
-	EndDate       *time.Time    `json:"end_date,omitempty"`
-	TotalDistance *int          `json:"total_distance,omitempty"`
-	Type          ChallengeType `json:"type"`
-	Finished      bool          `json:"finished"`
+	ID            string              `json:"id"`
+	Title         string              `json:"title"`
+	Description   string              `json:"description"`
+	StartDate     time.Time           `json:"start_date"`
+	EndDate       *time.Time          `json:"end_date,omitempty"`
+	TotalDistance *int                `json:"total_distance,omitempty"`
+	Type          ChallengeType       `json:"type"`
+	Finished      bool                `json:"finished"`
+	Ranking       []*ChallengeRanking `json:"ranking,omitempty"`
 }
 
-func NewChallengeFromEntity(c *entity.Challenge) *Challenge {
+func NewChallengeFromEntity(c *entity.Challenge, ranking []*entity.ChallengeRanking) *Challenge {
 	var finished bool
 	if c.Type == entity.ChallengeTypeDistance {
 		finished = c.EndDate != nil
@@ -76,7 +77,27 @@ func NewChallengeFromEntity(c *entity.Challenge) *Challenge {
 		TotalDistance: c.TotalDistance,
 		Type:          NewChallengeTypeFromEntity(c.Type),
 		Finished:      finished,
+		Ranking:       NewChallengeRankingFromEntity(ranking),
 	}
+}
+
+type ChallengeRanking struct {
+	User     *User `json:"user"`
+	Position int   `json:"position"`
+	Distance int   `json:"distance"`
+}
+
+func NewChallengeRankingFromEntity(c []*entity.ChallengeRanking) []*ChallengeRanking {
+	ranking := make([]*ChallengeRanking, 0, len(c))
+	for i, item := range c {
+		ranking = append(ranking, &ChallengeRanking{
+			User:     NewUserFromEntity(item.User),
+			Position: i,
+			Distance: item.Distance,
+		})
+	}
+
+	return ranking
 }
 
 type CreateChallengeInput struct {
