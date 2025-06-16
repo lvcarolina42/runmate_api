@@ -8,29 +8,86 @@ import (
 )
 
 type Activity struct {
-	repo *repository.Activity
+	activityRepo  *repository.Activity
+	challengeRepo *repository.Challenge
+	userRepo      *repository.User
 }
 
-func NewActivity(repo *repository.Activity) *Activity {
-	return &Activity{repo: repo}
+func NewActivity(activityRepo *repository.Activity, challengeRepo *repository.Challenge, userRepo *repository.User) *Activity {
+	return &Activity{activityRepo: activityRepo, challengeRepo: challengeRepo, userRepo: userRepo}
 }
 
 func (a *Activity) Create(ctx context.Context, activity *entity.Activity) error {
+	user, err := a.userRepo.GetByID(ctx, activity.UserID.String())
+	if err != nil {
+		return err
+	}
+
+	if user == nil {
+		return ErrUserNotFound
+	}
+
 	for i, coordinate := range activity.Coordinates {
 		coordinate.Order = int(i)
 	}
 
-	return a.repo.Create(ctx, activity)
+	err = a.activityRepo.Create(ctx, activity)
+	if err != nil {
+		return err
+	}
+
+	userChallenges, err := a.challengeRepo.GetAllActiveByUser(ctx, user)
+	if err != nil {
+		return err
+	}
+
+	for _, userChallenge := range userChallenges {
+		if activity.Date.Before(userChallenge.StartDate) || (userChallenge.EndDate != nil && activity.Date.After(*userChallenge.EndDate)) {
+			continue
+		}
+
+		err = a.challengeRepo.AddEvent(ctx, userChallenge, &entity.ChallengeEvent{
+			ChallengeID: userChallenge.ID,
+			UserID:      user.ID,
+			Distance:    activity.Distance,
+			Date:        activity.Date,
+		})
+		if err != nil {
+			return err
+		}
+
+		if userChallenge.Type == entity.ChallengeTypeDistance {
+			userChallengeEvents, err := a.challengeRepo.GetAllEventsByUser(ctx, userChallenge, user)
+			if err != nil {
+				return err
+			}
+
+			var total int
+			for _, userChallengeEvent := range userChallengeEvents {
+				total += userChallengeEvent.Distance
+			}
+
+			if total >= *userChallenge.TotalDistance {
+				userChallenge.EndDate = &activity.Date
+				err = a.challengeRepo.Update(ctx, userChallenge)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (a *Activity) ListAll(ctx context.Context) ([]*entity.Activity, error) {
-	return a.repo.GetAll(ctx)
+	return a.activityRepo.GetAll(ctx)
 }
 
 func (a *Activity) ListByUser(ctx context.Context, userID string) ([]*entity.Activity, error) {
-	return a.repo.GetByUserID(ctx, userID)
+	return a.activityRepo.GetByUserID(ctx, userID)
 }
 
 func (a *Activity) Delete(ctx context.Context, id string) error {
-	return a.repo.Delete(ctx, id)
+	return a.activityRepo.Delete(ctx, id)
 }
