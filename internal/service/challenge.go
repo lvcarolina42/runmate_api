@@ -79,7 +79,16 @@ func (c *Challenge) AddEvent(ctx context.Context, challengeID string, event *ent
 	return c.challengeRepo.AddEvent(ctx, challenge, event)
 }
 
-func (c *Challenge) AddUser(ctx context.Context, challengeID string, user *entity.User) error {
+func (c *Challenge) Join(ctx context.Context, challengeID, userID string) error {
+	user, err := c.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if user == nil {
+		return ErrUserNotFound
+	}
+
 	challenge, err := c.challengeRepo.GetByID(ctx, challengeID)
 	if err != nil {
 		return err

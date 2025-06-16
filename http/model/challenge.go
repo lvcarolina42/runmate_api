@@ -141,3 +141,8 @@ func (c *CreateChallengeInput) ToEntity() (*entity.Challenge, error) {
 		CreatedBy:     userID,
 	}, nil
 }
+
+type JoinChallengeInput struct {
+	UserID      string `json:"user_id"`
+	ChallengeID string `json:"challenge_id"`
+}

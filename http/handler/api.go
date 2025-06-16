@@ -40,6 +40,7 @@ func (a *api) Routes(r *chi.Mux) {
 	r.Route("/challenges", func(r chi.Router) {
 		r.Post("/", a.createChallenge)
 		r.Get("/{id}", a.getChallenge)
+		r.Put("/join", a.joinChallenge)
 	})
 
 	r.Route("/friends", func(r chi.Router) {
@@ -185,6 +186,23 @@ func (a *api) getChallenge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = json.NewEncoder(w).Encode(model.NewChallengeFromEntity(challenge))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) joinChallenge(w http.ResponseWriter, r *http.Request) {
+	var input model.JoinChallengeInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = a.challengeService.Join(r.Context(), input.ChallengeID, input.UserID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
