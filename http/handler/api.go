@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"runmate_api/http/model"
+	"runmate_api/internal/entity"
 	"runmate_api/internal/service"
 
 	"github.com/go-chi/chi/v5"
@@ -39,6 +40,7 @@ func (a *api) Routes(r *chi.Mux) {
 
 	r.Route("/challenges", func(r chi.Router) {
 		r.Post("/", a.createChallenge)
+		r.Get("/", a.getChallenges)
 		r.Get("/{id}", a.getChallenge)
 		r.Put("/join", a.joinChallenge)
 	})
@@ -176,6 +178,34 @@ func (a *api) createChallenge(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
+}
+
+func (a *api) getChallenges(w http.ResponseWriter, r *http.Request) {
+	var challenges []*entity.Challenge
+	var err error
+	if userID := r.URL.Query().Get("user_id"); userID != "" {
+		challenges, err = a.challengeService.ListAllActiveWithoutUserID(r.Context(), userID)
+	} else {
+		challenges, err = a.challengeService.ListAllActive(r.Context())
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := make([]*model.Challenge, 0, len(challenges))
+	for _, challenge := range challenges {
+		result = append(result, model.NewChallengeFromEntity(challenge, nil))
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (a *api) getChallenge(w http.ResponseWriter, r *http.Request) {

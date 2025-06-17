@@ -36,6 +36,16 @@ func (c *Challenge) GetByID(ctx context.Context, id string) (*entity.Challenge, 
 	return &challenge, nil
 }
 
+func (c *Challenge) GetAllActive(ctx context.Context) ([]*entity.Challenge, error) {
+	var challenges []*entity.Challenge
+	result := c.db.WithContext(ctx).Where("end_date IS NULL OR end_date > NOW()").Find(&challenges)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get active challenges: %v", result.Error)
+	}
+
+	return challenges, nil
+}
+
 func (c *Challenge) Update(ctx context.Context, challenge *entity.Challenge) error {
 	result := c.db.WithContext(ctx).Save(challenge)
 	if result.Error != nil {
@@ -43,6 +53,22 @@ func (c *Challenge) Update(ctx context.Context, challenge *entity.Challenge) err
 	}
 
 	return nil
+}
+
+func (c *Challenge) GetAllActiveWithoutUser(ctx context.Context, user *entity.User) ([]*entity.Challenge, error) {
+	var challenges []*entity.Challenge
+	err := c.db.WithContext(ctx).
+		Table("challenges").
+		Select("challenges.*").
+		Joins("LEFT JOIN user_challenges ON challenges.id = user_challenges.challenge_id AND user_challenges.user_id = ?", user.ID).
+		Where("user_challenges.challenge_id IS NULL AND end_date IS NULL OR end_date > NOW()").
+		Find(&challenges).
+		Error
+	if err != nil {
+		return nil, fmt.Errorf("failed to get challenges: %v", err)
+	}
+
+	return challenges, nil
 }
 
 func (c *Challenge) GetAllActiveByUser(ctx context.Context, user *entity.User) ([]*entity.Challenge, error) {

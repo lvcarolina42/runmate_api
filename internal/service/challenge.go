@@ -40,6 +40,23 @@ func (c *Challenge) GetByID(ctx context.Context, id string) (*entity.Challenge, 
 	return c.challengeRepo.GetByID(ctx, id)
 }
 
+func (c *Challenge) ListAllActive(ctx context.Context) ([]*entity.Challenge, error) {
+	return c.challengeRepo.GetAllActive(ctx)
+}
+
+func (c *Challenge) ListAllActiveWithoutUserID(ctx context.Context, userID string) ([]*entity.Challenge, error) {
+	user, err := c.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	return c.challengeRepo.GetAllActiveWithoutUser(ctx, user)
+}
+
 func (c *Challenge) ListAllActiveByUserID(ctx context.Context, userID string) ([]*entity.Challenge, error) {
 	user, err := c.userRepo.GetByID(ctx, userID)
 	if err != nil {
