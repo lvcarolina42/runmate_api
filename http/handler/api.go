@@ -16,17 +16,20 @@ import (
 type api struct {
 	activityService  *service.Activity
 	challengeService *service.Challenge
+	eventService     *service.Event
 	userService      *service.User
 }
 
 func NewAPI(
 	activityService *service.Activity,
 	challengeService *service.Challenge,
+	eventService *service.Event,
 	userService *service.User,
 ) *api {
 	return &api{
 		activityService:  activityService,
 		challengeService: challengeService,
+		eventService:     eventService,
 		userService:      userService,
 	}
 }
@@ -45,6 +48,14 @@ func (a *api) Routes(r *chi.Mux) {
 		r.Put("/join", a.joinChallenge)
 	})
 
+	r.Route("/events", func(r chi.Router) {
+		r.Post("/", a.createEvent)
+		r.Get("/", a.getEvents)
+		r.Get("/{id}", a.getEvent)
+		r.Put("/join", a.joinEvent)
+		r.Put("/quit", a.quitEvent)
+	})
+
 	r.Route("/friends", func(r chi.Router) {
 		r.Post("/", a.addFriend)
 		r.Delete("/", a.removeFriend)
@@ -59,6 +70,8 @@ func (a *api) Routes(r *chi.Mux) {
 		r.Delete("/{id}", a.deleteUser)
 
 		r.Get("/{id}/activities", a.getUserActivities)
+
+		r.Get("/{id}/events", a.getUserEvents)
 
 		r.Get("/{id}/challenges", a.getUserChallenges)
 
@@ -276,6 +289,148 @@ func (a *api) getUserChallenges(w http.ResponseWriter, r *http.Request) {
 		}
 
 		result = append(result, model.NewChallengeFromEntity(challenge, ranking))
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) createEvent(w http.ResponseWriter, r *http.Request) {
+	var input model.CreateEventInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = input.Validate()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	event, err := input.ToEntity()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = a.eventService.Create(r.Context(), event)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(model.NewEventFromEntity(event))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusCreated)
+}
+
+func (a *api) getEvents(w http.ResponseWriter, r *http.Request) {
+	var events []*entity.Event
+	var err error
+	if userID := r.URL.Query().Get("user_id"); userID != "" {
+		events, err = a.eventService.ListAllActiveWithoutUserID(r.Context(), userID)
+	} else {
+		events, err = a.eventService.ListAllActive(r.Context())
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := make([]*model.Event, 0, len(events))
+	for _, event := range events {
+		result = append(result, model.NewEventFromEntity(event))
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) getEvent(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	event, err := a.eventService.GetByID(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(model.NewEventFromEntity(event))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) joinEvent(w http.ResponseWriter, r *http.Request) {
+	var input model.JoinQuitEventInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = a.eventService.Join(r.Context(), input.EventID, input.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) quitEvent(w http.ResponseWriter, r *http.Request) {
+	var input model.JoinQuitEventInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = a.eventService.Quit(r.Context(), input.EventID, input.UserID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) getUserEvents(w http.ResponseWriter, r *http.Request) {
+	userID := chi.URLParam(r, "id")
+
+	listEventsFunc := a.eventService.ListAllByUserID
+	if r.URL.Query().Get("active") == "1" {
+		listEventsFunc = a.eventService.ListAllActiveByUserID
+	}
+
+	events, err := listEventsFunc(r.Context(), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := make([]*model.Event, 0, len(events))
+	for _, event := range events {
+		result = append(result, model.NewEventFromEntity(event))
 	}
 
 	err = json.NewEncoder(w).Encode(result)

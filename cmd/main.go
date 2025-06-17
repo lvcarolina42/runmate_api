@@ -36,6 +36,7 @@ func main() {
 		&entity.Challenge{},
 		&entity.ChallengeEvent{},
 		&entity.Message{},
+		&entity.Event{},
 	)
 	if err != nil {
 		log.Fatalf("failed to migrate database %v", err)
@@ -43,18 +44,20 @@ func main() {
 
 	activityRepo := repository.NewActivity(db)
 	challengeRepo := repository.NewChallenge(db)
+	eventRepo := repository.NewEvent(db)
 	messageRepo := repository.NewMessage(db)
 	userRepo := repository.NewUser(db)
 
 	activityService := service.NewActivity(activityRepo, challengeRepo, userRepo)
 	challengeService := service.NewChallenge(challengeRepo, userRepo)
+	eventService := service.NewEvent(eventRepo, userRepo)
 	messageService := service.NewMessage(challengeRepo, messageRepo, userRepo)
 	userService := service.NewUser(userRepo)
 
 	chatHub := chat.NewHub()
 	chatConsumer := chat.NewConsumer(chatHub, messageService, userService)
 
-	api := handler.NewAPI(activityService, challengeService, userService)
+	api := handler.NewAPI(activityService, challengeService, eventService, userService)
 	chat := handler.NewChat(activityService, challengeService, messageService, userService, chatHub, chatConsumer)
 
 	r := chi.NewRouter()

@@ -32,6 +32,7 @@ type User struct {
 	Challenges        []*Challenge      `gorm:"many2many:user_challenges;constraint:OnDelete:CASCADE"`
 	CreatedChallenges []*Challenge      `gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE"`
 	ChallengeEvents   []*ChallengeEvent `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Events            []*Event          `gorm:"many2many:user_events;constraint:OnDelete:CASCADE"`
 }
 
 func (u *User) Validate() error {
