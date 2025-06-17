@@ -14,6 +14,10 @@ func Env() string {
 	return os.Getenv("ENV")
 }
 
+func Production() bool {
+	return Env() == Prod
+}
+
 func DatabaseHost() string {
 	return os.Getenv("DB_HOST")
 }
@@ -44,4 +48,32 @@ func DatabaseURL() string {
 
 func APIPort() string {
 	return os.Getenv("API_PORT")
+}
+
+func KafkaHost() string {
+	return os.Getenv("KAFKA_HOST")
+}
+
+func KafkaPort() string {
+	return os.Getenv("KAFKA_PORT")
+}
+
+func KafkaURL() string {
+	return fmt.Sprintf("%s:%s", KafkaHost(), KafkaPort())
+}
+
+func KafkaUsername() string {
+	return "$ConnectionString"
+}
+
+func KafkaAccessKeyName() string {
+	return os.Getenv("KAFKA_ACCESS_KEY_NAME")
+}
+
+func KafkaAccessKey() string {
+	return os.Getenv("KAFKA_ACCESS_KEY")
+}
+
+func KafkaPassword() string {
+	return fmt.Sprintf("Endpoint=sb://%s/;SharedAccessKeyName=%s;SharedAccessKey=%s", KafkaHost(), KafkaAccessKeyName(), KafkaAccessKey())
 }

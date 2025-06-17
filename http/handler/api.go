@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/go-chi/chi/v5"
-	"github.com/google/uuid"
-
 	"runmate_api/http/model"
 	"runmate_api/internal/service"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 )
 
 type api struct {
@@ -169,6 +169,12 @@ func (a *api) createChallenge(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = json.NewEncoder(w).Encode(model.NewChallengeFromEntity(challenge, nil))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusCreated)
 }
 
@@ -262,6 +268,12 @@ func (a *api) createUser(w http.ResponseWriter, r *http.Request) {
 	user := input.ToEntity()
 
 	err = a.userService.Create(r.Context(), user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = json.NewEncoder(w).Encode(model.NewUserFromEntity(user))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
