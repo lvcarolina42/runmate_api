@@ -83,9 +83,9 @@ Explicação dos casos de uso mais complexos. Os casos de uso que não aparecem 
 Existem dois tipos de desafios:
 
 1. Desafios com meta de distância (ChallengeTypeDistance)
-    a. Não existe uma data de fim para o desafio. Encerra com o primeiro usuário que atingir a meta
+    1. Não existe uma data de fim para o desafio. Encerra com o primeiro usuário que atingir a meta
 1. Desafios com meta de data (ChallengeTypeDate)
-    a. Não existe uma distância para o desafio. Encerra quando a data de fim do desafio for atingida
+    1. Não existe uma distância para o desafio. Encerra quando a data de fim do desafio for atingida
 
 ### Ranking dos desafios (runmate_api/internal/service/challenge.go(.Ranking))
 
@@ -127,15 +127,15 @@ Essa expressão define que o usuário deve percorrer 1.000 metros a mais que per
 ### Funcionamento
 
 1. Usuários se conectam ao hub do desafio pelo websocket
-    a. A partir desse momento, terá acesso a todas as mensagens enviadas no hub
-    a. Quando o usuário se conecta, é enviada uma mensagem, exclusiva para o sistema (`type = 1`), para a criação do
+    1. A partir desse momento, terá acesso a todas as mensagens enviadas no hub
+    1. Quando o usuário se conecta, é enviada uma mensagem, exclusiva para o sistema (`type = 1`), para a criação do
     tópico do Kafka, caso ele não exista. Essa mensagem não deve ser exibida para os usuários
 1. Ao enviar uma mensagem, ela é publicada no tópico do Kafka pelo Publicador (runmate_api/internal/chat/kafka.go(.Publisher))
 1. O consumidor recebe as mensagens do tópico (runmate_api/http/handler/chat.go(.Consumer.Start))
-    a. Interpreta a mensagem
-    a. Salva no banco, para histórico
-    a. Constrói um modelo mais claro para o cliente (app)
-    a. Envia a mensagem para os usuários conectados ao hub (Broadcast)
+    1. Interpreta a mensagem
+    1. Salva no banco, para histórico
+    1. Constrói um modelo mais claro para o cliente (app)
+    1. Envia a mensagem para os usuários conectados ao hub (Broadcast)
 
 ### Limitações
 
