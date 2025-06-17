@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"runmate_api/config"
+	"runmate_api/http/model"
 	"runmate_api/internal/entity"
 	"runmate_api/internal/service"
 
@@ -129,10 +130,15 @@ func (p *Publisher) Publish(message []byte) error {
 type Consumer struct {
 	hub            *Hub
 	messageService *service.Message
+	userService    *service.User
 }
 
-func NewConsumer(hub *Hub, messageService *service.Message) *Consumer {
-	return &Consumer{hub: hub, messageService: messageService}
+func NewConsumer(hub *Hub, messageService *service.Message, userService *service.User) *Consumer {
+	return &Consumer{
+		hub:            hub,
+		messageService: messageService,
+		userService:    userService,
+	}
 }
 
 func (c *Consumer) Start(ctx context.Context, challengeID string) {
@@ -172,21 +178,31 @@ func (c *Consumer) Start(ctx context.Context, challengeID string) {
 				continue
 			}
 
-			message, err := payload.ToEntity(challengeID)
+			msg, err := payload.ToEntity(challengeID)
 			if err != nil {
 				log.Println("Failed to create message entity:", err)
 				continue
 			}
 
-			if err := c.messageService.Create(ctx, message); err != nil {
-				log.Println("Failed to save message:", err)
-			}
+			if msg.Type == entity.MessageTypeUser {
+				user, err := c.userService.GetByID(ctx, msg.UserID.String())
+				if err != nil {
+					log.Println("Failed to get user:", err)
+					continue
+				}
 
-			if message.Type == entity.MessageTypeSystem {
-				continue
-			}
+				if err := c.messageService.Create(ctx, msg); err != nil {
+					log.Println("Failed to save message:", err)
+				}
 
-			c.hub.Broadcast(challengeID, m.Value)
+				messageData, err := json.Marshal(model.NewMessageFromEntity(msg, user))
+				if err != nil {
+					log.Println("Failed to marshal message:", err)
+					continue
+				}
+
+				c.hub.Broadcast(challengeID, messageData)
+			}
 
 			if err := reader.CommitMessages(ctx, m); err != nil {
 				log.Println("Failed to commit message:", err)

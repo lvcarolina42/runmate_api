@@ -52,7 +52,7 @@ func main() {
 	userService := service.NewUser(userRepo)
 
 	chatHub := chat.NewHub()
-	chatConsumer := chat.NewConsumer(chatHub, messageService)
+	chatConsumer := chat.NewConsumer(chatHub, messageService, userService)
 
 	api := handler.NewAPI(activityService, challengeService, userService)
 	chat := handler.NewChat(activityService, challengeService, messageService, userService, chatHub, chatConsumer)
