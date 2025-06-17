@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"runmate_api/internal/entity"
 	"runmate_api/internal/repository"
@@ -105,7 +104,6 @@ func (c *Challenge) GetRanking(ctx context.Context, challenge *entity.Challenge)
 
 	ranking := make([]*entity.ChallengeRanking, 0, len(rankingItems))
 	for i, item := range rankingItems {
-		fmt.Printf("item: %v\n", item)
 		user, err := c.userRepo.GetByID(ctx, item.UserID.String())
 		if err != nil {
 			return nil, err
