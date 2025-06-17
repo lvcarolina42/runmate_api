@@ -45,3 +45,7 @@ func DatabaseURL() string {
 func APIPort() string {
 	return os.Getenv("API_PORT")
 }
+
+func KafkaURL() string {
+	return os.Getenv("KAFKA_URL")
+}

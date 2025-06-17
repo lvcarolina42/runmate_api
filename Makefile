@@ -1,11 +1,11 @@
 deps:
 	@docker compose up -d
 
-deps-down:
+stop:
 	@docker compose down -v --remove-orphans
 
 run: deps
-	@sleep 1
+	@sleep 2
 	@go run cmd/main.go
 
 .PHONY: deps runs
