@@ -29,11 +29,11 @@ func main() {
 	}
 
 	err = db.AutoMigrate(
+		&entity.User{},
 		&entity.Activity{},
+		&entity.Coordinate{},
 		&entity.Challenge{},
 		&entity.ChallengeEvent{},
-		&entity.Coordinate{},
-		&entity.User{},
 	)
 	if err != nil {
 		log.Fatalf("failed to migrate database %v", err)
