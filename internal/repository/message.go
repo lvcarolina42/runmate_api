@@ -22,6 +22,6 @@ func (r *Message) Save(ctx context.Context, message *entity.Message) error {
 
 func (r *Message) GetAllByChallengeID(ctx context.Context, challengeID string) ([]*entity.Message, error) {
 	var messages []*entity.Message
-	err := r.db.WithContext(ctx).Where("challenge_id = ?", challengeID).Order("created_at ASC").Find(&messages).Error
+	err := r.db.WithContext(ctx).Where("challenge_id = ?", challengeID).Where("type = ?", entity.MessageTypeUser).Order("created_at ASC").Find(&messages).Error
 	return messages, err
 }

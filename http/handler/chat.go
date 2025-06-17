@@ -59,9 +59,13 @@ func (c *chatHandler) handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	publisher := chat.NewPublisher(id)
+	defer publisher.Close()
+
 	c.hub.AddConnection(id, conn, func() {
 		ctx, cancel := context.WithCancel(context.Background())
 		c.hub.Consumers[id] = cancel
+		publisher.Start()
 		go c.consumer.Start(ctx, id)
 	})
 
@@ -69,9 +73,6 @@ func (c *chatHandler) handle(w http.ResponseWriter, r *http.Request) {
 		c.hub.RemoveConnection(id, conn)
 		conn.Close()
 	}()
-
-	publisher := chat.NewPublisher(id)
-	defer publisher.Close()
 
 	for {
 		_, msg, err := conn.ReadMessage()

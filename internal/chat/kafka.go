@@ -20,6 +20,7 @@ import (
 type messagePayload struct {
 	UserID  string `json:"user_id"`
 	Content string `json:"content"`
+	Type    int    `json:"type"`
 }
 
 func (p messagePayload) ToEntity(challengeID string) (*entity.Message, error) {
@@ -71,6 +72,39 @@ func NewPublisher(challengeID string) *Publisher {
 	return &Publisher{
 		writer: writer,
 	}
+}
+
+func (p *Publisher) Start() error {
+	fmt.Println("STARTING")
+
+	message, err := json.Marshal(messagePayload{
+		UserID:  "00000000-0000-0000-0000-000000000000",
+		Content: "Publisher started",
+		Type:    entity.MessageTypeSystem,
+	})
+	if err != nil {
+		return err
+	}
+
+	retries := 5
+	for i := 0; i < retries; i++ {
+		err = p.writer.WriteMessages(context.Background(),
+			kafka.Message{
+				Key:   []byte(uuid.New().String()),
+				Value: message,
+			},
+		)
+		if err != nil {
+			log.Println("Error strating publisher:", err)
+			time.Sleep(time.Second * time.Duration(i+1))
+			continue
+		}
+
+		fmt.Println("Publisher started")
+		break
+	}
+
+	return err
 }
 
 func (p *Publisher) Close() {
@@ -145,6 +179,10 @@ func (c *Consumer) Start(ctx context.Context, challengeID string) {
 
 			if err := c.messageService.Create(ctx, message); err != nil {
 				log.Println("Failed to save message:", err)
+			}
+
+			if message.Type == entity.MessageTypeSystem {
+				continue
 			}
 
 			c.hub.Broadcast(challengeID, m.Value)
