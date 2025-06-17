@@ -14,6 +14,7 @@ type Activity struct {
 	Duration    int
 	Distance    int
 	Coordinates []*Coordinate `gorm:"foreignKey:ActivityID;constraint:OnDelete:CASCADE"`
+	User        *User         `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
 }
 
 type Coordinate struct {

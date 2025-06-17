@@ -17,6 +17,7 @@ type Activity struct {
 	Duration    int           `json:"duration"`
 	Distance    int           `json:"distance"`
 	Coordinates []*Coordinate `json:"coordinates"`
+	User        *User         `json:"user"`
 }
 
 func NewActivityFromEntity(activity *entity.Activity) *Activity {
@@ -28,6 +29,7 @@ func NewActivityFromEntity(activity *entity.Activity) *Activity {
 		Duration:    activity.Duration,
 		Distance:    activity.Distance,
 		Coordinates: newCoordinatesFromEntity(activity.Coordinates),
+		User:        NewUserFromEntity(activity.User),
 	}
 }
 

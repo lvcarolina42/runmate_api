@@ -34,6 +34,7 @@ func (a *Activity) GetAll(ctx context.Context) ([]*entity.Activity, error) {
 		Preload("Coordinates", func(db *gorm.DB) *gorm.DB {
 			return db.Order("coordinates.order ASC")
 		}).
+		Preload("User").
 		Find(&activities)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get activities: %v", result.Error)
@@ -49,6 +50,7 @@ func (a *Activity) GetByUserID(ctx context.Context, userID string) ([]*entity.Ac
 		Preload("Coordinates", func(db *gorm.DB) *gorm.DB {
 			return db.Order("coordinates.order ASC")
 		}).
+		Preload("User").
 		Where("user_id = ?", userID).
 		Find(&activities)
 	if result.Error != nil {
