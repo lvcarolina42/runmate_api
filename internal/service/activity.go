@@ -37,6 +37,12 @@ func (a *Activity) Create(ctx context.Context, activity *entity.Activity) error 
 		return err
 	}
 
+	user.XP += activity.Distance
+	err = a.userRepo.Update(ctx, user)
+	if err != nil {
+		return err
+	}
+
 	userChallenges, err := a.challengeRepo.GetAllActiveByUser(ctx, user)
 	if err != nil {
 		return err

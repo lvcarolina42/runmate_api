@@ -7,22 +7,28 @@ import (
 )
 
 type User struct {
-	ID        string    `json:"id"`
-	Username  string    `json:"username"`
-	Name      string    `json:"name"`
-	Email     string    `json:"email"`
-	Birthdate time.Time `json:"birthdate"`
-	Role      int8      `json:"role"`
+	ID          string    `json:"id"`
+	Username    string    `json:"username"`
+	Name        string    `json:"name"`
+	Email       string    `json:"email"`
+	Birthdate   time.Time `json:"birthdate"`
+	Role        int8      `json:"role"`
+	XP          int       `json:"xp"`
+	Level       int       `json:"level"`
+	NextLevelXP int       `json:"next_level_xp"`
 }
 
 func NewUserFromEntity(user *entity.User) *User {
 	return &User{
-		ID:        user.ID.String(),
-		Username:  user.Username,
-		Name:      user.Name,
-		Email:     user.Email,
-		Birthdate: user.Birthdate,
-		Role:      user.Role,
+		ID:          user.ID.String(),
+		Username:    user.Username,
+		Name:        user.Name,
+		Email:       user.Email,
+		Birthdate:   user.Birthdate,
+		Role:        user.Role,
+		XP:          user.XP,
+		Level:       user.CurrentLevel(),
+		NextLevelXP: user.NextLevelXP(),
 	}
 }
 

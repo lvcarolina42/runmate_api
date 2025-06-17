@@ -2,6 +2,7 @@ package entity
 
 import (
 	"errors"
+	"math"
 	"regexp"
 	"time"
 
@@ -24,6 +25,7 @@ type User struct {
 	Password          string
 	Name              string
 	Role              int8
+	XP                int
 	Birthdate         time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
@@ -41,4 +43,16 @@ func (u *User) Validate() error {
 	}
 
 	return nil
+}
+
+func (u *User) CurrentLevel() int {
+	return int(math.Sqrt(float64(1000*(2*u.XP+250)))+500) / 1000
+}
+
+func (u *User) levelXP(level int) int {
+	return int((math.Pow(float64(level), 2)+float64(level))/2*1000) - (level * 1000)
+}
+
+func (u *User) NextLevelXP() int {
+	return u.levelXP(u.CurrentLevel()+1) - u.XP
 }
