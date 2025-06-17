@@ -75,7 +75,10 @@ func (a *api) Routes(r *chi.Mux) {
 
 		r.Get("/{id}/challenges", a.getUserChallenges)
 
-		r.Get("/{id}/friends", a.listFriends)
+		r.Route("/{id}/friends", func(r chi.Router) {
+			r.Get("/", a.listFriends)
+			r.Get("/activities", a.listFriendsActivities)
+		})
 	})
 
 	r.Post("/login", a.login)
@@ -609,6 +612,28 @@ func (a *api) listFriends(w http.ResponseWriter, r *http.Request) {
 	result := make([]*model.User, 0, len(friends))
 	for _, friend := range friends {
 		result = append(result, model.NewUserFromEntity(friend))
+	}
+
+	err = json.NewEncoder(w).Encode(result)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) listFriendsActivities(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	activities, err := a.activityService.ListAllFromUserFriends(r.Context(), id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	result := make([]*model.Activity, 0, len(activities))
+	for _, activity := range activities {
+		result = append(result, model.NewActivityFromEntity(activity))
 	}
 
 	err = json.NewEncoder(w).Encode(result)

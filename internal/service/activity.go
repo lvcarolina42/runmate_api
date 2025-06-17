@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"sort"
 
 	"runmate_api/internal/entity"
 	"runmate_api/internal/repository"
@@ -86,6 +87,38 @@ func (a *Activity) ListAll(ctx context.Context) ([]*entity.Activity, error) {
 
 func (a *Activity) ListByUser(ctx context.Context, userID string) ([]*entity.Activity, error) {
 	return a.activityRepo.GetByUserID(ctx, userID)
+}
+
+func (a *Activity) ListAllFromUserFriends(ctx context.Context, userID string) ([]*entity.Activity, error) {
+	user, err := a.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	friends, err := a.userRepo.ListFriends(ctx, user)
+	if err != nil {
+		return nil, err
+	}
+
+	var activities []*entity.Activity
+	for _, friend := range friends {
+		activitiesFromFriend, err := a.activityRepo.GetByUserID(ctx, friend.ID.String())
+		if err != nil {
+			return nil, err
+		}
+
+		activities = append(activities, activitiesFromFriend...)
+	}
+
+	sort.Slice(activities, func(i, j int) bool {
+		return activities[i].Date.Before(activities[j].Date)
+	})
+
+	return activities, nil
 }
 
 func (a *Activity) Delete(ctx context.Context, id string) error {
