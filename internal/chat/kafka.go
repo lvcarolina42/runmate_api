@@ -45,15 +45,17 @@ func getTopic(challengeID string) string {
 	return fmt.Sprintf("chat-challenge-%s", challengeID)
 }
 
-func PublishMessage(challengeID string, message []byte) error {
+type Publisher struct {
+	writer *kafka.Writer
+}
+
+func NewPublisher(challengeID string) *Publisher {
 	writer := &kafka.Writer{
 		Addr:         kafka.TCP(config.KafkaURL()),
 		Topic:        getTopic(challengeID),
 		Balancer:     &kafka.LeastBytes{},
 		RequiredAcks: kafka.RequireAll,
 	}
-	defer writer.Close()
-
 	if config.Production() {
 		writer.Transport = &kafka.Transport{
 			DialTimeout: 10 * time.Second,
@@ -65,16 +67,26 @@ func PublishMessage(challengeID string, message []byte) error {
 		}
 	}
 
-	time.Sleep(1 * time.Second)
-	err := writer.WriteMessages(context.Background(),
+	return &Publisher{
+		writer: writer,
+	}
+}
+
+func (p *Publisher) Close() {
+	p.writer.Close()
+}
+
+func (p *Publisher) Publish(message []byte) error {
+	err := p.writer.WriteMessages(context.Background(),
 		kafka.Message{
-			Key:   []byte(challengeID),
+			Key:   []byte(uuid.New().String()),
 			Value: message,
 		},
 	)
 	if err != nil {
 		log.Println("Error publishing message:", err)
 	}
+
 	return err
 }
 

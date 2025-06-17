@@ -70,6 +70,9 @@ func (c *chatHandler) handle(w http.ResponseWriter, r *http.Request) {
 		conn.Close()
 	}()
 
+	publisher := chat.NewPublisher(id)
+	defer publisher.Close()
+
 	for {
 		_, msg, err := conn.ReadMessage()
 		if err != nil {
@@ -77,7 +80,7 @@ func (c *chatHandler) handle(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		chat.PublishMessage(id, msg)
+		publisher.Publish(msg)
 	}
 }
 
