@@ -37,6 +37,7 @@ func (p messagePayload) ToEntity(challengeID string) (*entity.Message, error) {
 	return &entity.Message{
 		Content:     p.Content,
 		ChallengeID: cID,
+		Type:        p.Type,
 		UserID:      userID,
 		CreatedAt:   time.Now(),
 	}, nil
