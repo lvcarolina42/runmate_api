@@ -51,10 +51,11 @@ type Publisher struct {
 
 func NewPublisher(challengeID string) *Publisher {
 	writer := &kafka.Writer{
-		Addr:         kafka.TCP(config.KafkaURL()),
-		Topic:        getTopic(challengeID),
-		Balancer:     &kafka.LeastBytes{},
-		RequiredAcks: kafka.RequireAll,
+		Addr:                   kafka.TCP(config.KafkaURL()),
+		Topic:                  getTopic(challengeID),
+		Balancer:               &kafka.LeastBytes{},
+		RequiredAcks:           kafka.RequireAll,
+		AllowAutoTopicCreation: true,
 	}
 	if config.Production() {
 		writer.Transport = &kafka.Transport{
