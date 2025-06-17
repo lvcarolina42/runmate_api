@@ -32,6 +32,19 @@ func (u *User) ListAll(ctx context.Context) ([]*entity.User, error) {
 	return u.repo.GetAll(ctx)
 }
 
+func (u *User) ListAllNonFriends(ctx context.Context, userID string) ([]*entity.User, error) {
+	user, err := u.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	if user == nil {
+		return nil, ErrUserNotFound
+	}
+
+	return u.repo.GetAllNonFriends(ctx, user)
+}
+
 func (u *User) GetByID(ctx context.Context, id string) (*entity.User, error) {
 	return u.repo.GetByID(ctx, id)
 }

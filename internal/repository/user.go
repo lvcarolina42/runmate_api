@@ -36,6 +36,21 @@ func (u *User) GetAll(ctx context.Context) ([]*entity.User, error) {
 	return users, nil
 }
 
+func (u *User) GetAllNonFriends(ctx context.Context, user *entity.User) ([]*entity.User, error) {
+	var users []*entity.User
+	result := u.db.WithContext(ctx).
+		Table("users").
+		Select("users.*").
+		Joins("LEFT JOIN user_friends ON users.id = user_friends.friend_id AND user_friends.user_id = ?", user.ID).
+		Where("user_friends.friend_id IS NULL AND users.id != ?", user.ID).
+		Find(&users)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get users: %v", result.Error)
+	}
+
+	return users, nil
+}
+
 func (u *User) GetByID(ctx context.Context, id string) (*entity.User, error) {
 	var user entity.User
 	result := u.db.WithContext(ctx).Where("id = ?", id).First(&user)

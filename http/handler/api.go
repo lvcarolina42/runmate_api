@@ -468,7 +468,14 @@ func (a *api) createUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *api) getUsers(w http.ResponseWriter, r *http.Request) {
-	users, err := a.userService.ListAll(r.Context())
+	var users []*entity.User
+	var err error
+	if userID := r.URL.Query().Get("user_id"); userID != "" {
+		users, err = a.userService.ListAllNonFriends(r.Context(), userID)
+	} else {
+		users, err = a.userService.ListAll(r.Context())
+	}
+
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
