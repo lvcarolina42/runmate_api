@@ -61,7 +61,7 @@ func (c *Challenge) GetAllActiveWithoutUser(ctx context.Context, user *entity.Us
 		Table("challenges").
 		Select("challenges.*").
 		Joins("LEFT JOIN user_challenges ON challenges.id = user_challenges.challenge_id AND user_challenges.user_id = ?", user.ID).
-		Where("user_challenges.challenge_id IS NULL AND end_date IS NULL OR end_date > NOW()").
+		Where("user_challenges.challenge_id IS NULL AND (challenges.end_date IS NULL OR challenges.end_date > NOW())").
 		Find(&challenges).
 		Error
 	if err != nil {
