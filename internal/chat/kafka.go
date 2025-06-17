@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -13,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/segmentio/kafka-go"
+	"github.com/segmentio/kafka-go/sasl/plain"
 )
 
 type messagePayload struct {
@@ -52,6 +54,18 @@ func PublishMessage(challengeID string, message []byte) error {
 	}
 	defer writer.Close()
 
+	if config.Production() {
+		writer.Transport = &kafka.Transport{
+			DialTimeout: 10 * time.Second,
+			TLS:         &tls.Config{},
+			SASL: plain.Mechanism{
+				Username: config.KafkaUsername(),
+				Password: config.KafkaPassword(),
+			},
+		}
+	}
+
+	time.Sleep(1 * time.Second)
 	err := writer.WriteMessages(context.Background(),
 		kafka.Message{
 			Key:   []byte(challengeID),
@@ -76,11 +90,23 @@ func NewConsumer(hub *Hub, messageService *service.Message) *Consumer {
 func (c *Consumer) Start(ctx context.Context, challengeID string) {
 	topic := getTopic(challengeID)
 
-	reader := kafka.NewReader(kafka.ReaderConfig{
+	readerConfig := kafka.ReaderConfig{
 		Brokers: []string{config.KafkaURL()},
 		Topic:   topic,
 		GroupID: "chat-group-" + challengeID,
-	})
+	}
+	if config.Production() {
+		readerConfig.Dialer = &kafka.Dialer{
+			Timeout: 10 * time.Second,
+			TLS:     &tls.Config{},
+			SASLMechanism: plain.Mechanism{
+				Username: config.KafkaUsername(),
+				Password: config.KafkaPassword(),
+			},
+		}
+	}
+
+	reader := kafka.NewReader(readerConfig)
 	go func() {
 		defer reader.Close()
 
@@ -109,6 +135,10 @@ func (c *Consumer) Start(ctx context.Context, challengeID string) {
 			}
 
 			c.hub.Broadcast(challengeID, m.Value)
+
+			if err := reader.CommitMessages(ctx, m); err != nil {
+				log.Println("Failed to commit message:", err)
+			}
 		}
 	}()
 }
