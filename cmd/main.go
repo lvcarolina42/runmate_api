@@ -8,6 +8,7 @@ import (
 	"runmate_api/http/handler"
 	"runmate_api/internal/chat"
 	"runmate_api/internal/entity"
+	"runmate_api/internal/firebase"
 	"runmate_api/internal/repository"
 	"runmate_api/internal/service"
 
@@ -42,6 +43,11 @@ func main() {
 		log.Fatalf("failed to migrate database %v", err)
 	}
 
+	firebaseClient, err := firebase.NewClient()
+	if err != nil {
+		log.Fatalf("failed to initialize firebase client %v", err)
+	}
+
 	activityRepo := repository.NewActivity(db)
 	challengeRepo := repository.NewChallenge(db)
 	eventRepo := repository.NewEvent(db)
@@ -57,11 +63,14 @@ func main() {
 	chatHub := chat.NewHub()
 	chatConsumer := chat.NewConsumer(chatHub, messageService, userService)
 
+	adm := handler.NewADM(activityService, challengeService, eventService, userService, firebaseClient)
 	api := handler.NewAPI(activityService, challengeService, eventService, userService)
 	chat := handler.NewChat(activityService, challengeService, messageService, userService, chatHub, chatConsumer)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger, middleware.RealIP, middleware.Recoverer, middleware.RequestID)
+
+	adm.Routes(r)
 	api.Routes(r)
 	chat.Routes(r)
 
