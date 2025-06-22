@@ -70,6 +70,20 @@ func (u *User) Update(ctx context.Context, user *entity.User) error {
 	return u.repo.Update(ctx, user)
 }
 
+func (u *User) UpdateFCMToken(ctx context.Context, userID string, fcmToken string) error {
+	user, err := u.GetByID(ctx, userID)
+	if err != nil {
+		return err
+	}
+
+	if user == nil {
+		return ErrUserNotFound
+	}
+
+	user.FCMToken = fcmToken
+	return u.repo.Update(ctx, user)
+}
+
 func (u *User) Delete(ctx context.Context, id string) error {
 	return u.repo.Delete(ctx, id)
 }

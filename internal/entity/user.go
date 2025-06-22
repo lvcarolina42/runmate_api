@@ -24,6 +24,7 @@ type User struct {
 	Email             string    `gorm:"unique"`
 	Password          string
 	Name              string
+	FCMToken          string
 	Role              int8
 	XP                int
 	Birthdate         time.Time
