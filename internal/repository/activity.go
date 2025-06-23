@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -55,6 +56,23 @@ func (a *Activity) GetByUserID(ctx context.Context, userID string) ([]*entity.Ac
 		Find(&activities)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get activities for user %s: %v", userID, result.Error)
+	}
+
+	return activities, nil
+}
+
+func (a *Activity) GetByUserIDAndDateRange(ctx context.Context, userID string, start, end time.Time) ([]*entity.Activity, error) {
+	var activities []*entity.Activity
+	result := a.db.
+		WithContext(ctx).
+		Preload("Coordinates", func(db *gorm.DB) *gorm.DB {
+			return db.Order("coordinates.order ASC")
+		}).
+		Preload("User").
+		Where("user_id = ? AND date >= ? AND date <= ?", userID, start, end).
+		Find(&activities)
+	if result.Error != nil {
+		return nil, fmt.Errorf("failed to get activities for user %s in date range %s - %s: %v", userID, start, end, result.Error)
 	}
 
 	return activities, nil

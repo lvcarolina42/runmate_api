@@ -6,6 +6,12 @@ import (
 	"runmate_api/internal/entity"
 )
 
+type Goal struct {
+	Days           *int           `json:"days,omitempty"`
+	DailyDistance  *int           `json:"daily_distance,omitempty"`
+	WeekActivities map[string]int `json:"week_activities,omitempty"`
+}
+
 type User struct {
 	ID          string    `json:"id"`
 	Username    string    `json:"username"`
@@ -16,9 +22,18 @@ type User struct {
 	XP          int       `json:"xp"`
 	Level       int       `json:"level"`
 	NextLevelXP int       `json:"next_level_xp"`
+	Goal        *Goal     `json:"goal,omitempty"`
 }
 
 func NewUserFromEntity(user *entity.User) *User {
+	var weekActivities map[string]int
+	if user.WeekActivities != nil {
+		weekActivities = make(map[string]int)
+		for date, activity := range user.WeekActivities {
+			weekActivities[date] = activity.Distance
+		}
+	}
+
 	return &User{
 		ID:          user.ID.String(),
 		Username:    user.Username,
@@ -29,6 +44,11 @@ func NewUserFromEntity(user *entity.User) *User {
 		XP:          user.XP,
 		Level:       user.CurrentLevel(),
 		NextLevelXP: user.NextLevelXP(),
+		Goal: &Goal{
+			Days:           user.GoalDays,
+			DailyDistance:  user.GoalDailyDistance,
+			WeekActivities: weekActivities,
+		},
 	}
 }
 
@@ -63,4 +83,9 @@ type LoginInput struct {
 
 type UpdateUserFCMTokenInput struct {
 	Token string `json:"token"`
+}
+
+type UpdateUserGoalInput struct {
+	Days          int `json:"days"`
+	DailyDistance int `json:"distance"`
 }

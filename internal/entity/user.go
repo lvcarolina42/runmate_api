@@ -27,15 +27,18 @@ type User struct {
 	FCMToken          string
 	Role              int8
 	XP                int
+	GoalDays          *int
+	GoalDailyDistance *int
 	Birthdate         time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
-	Activities        []*Activity       `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Friends           []*User           `gorm:"many2many:user_friends;constraint:OnDelete:CASCADE"`
-	Challenges        []*Challenge      `gorm:"many2many:user_challenges;constraint:OnDelete:CASCADE"`
-	CreatedChallenges []*Challenge      `gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE"`
-	ChallengeEvents   []*ChallengeEvent `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Events            []*Event          `gorm:"many2many:user_events;constraint:OnDelete:CASCADE"`
+	Activities        []*Activity                 `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Friends           []*User                     `gorm:"many2many:user_friends;constraint:OnDelete:CASCADE"`
+	Challenges        []*Challenge                `gorm:"many2many:user_challenges;constraint:OnDelete:CASCADE"`
+	CreatedChallenges []*Challenge                `gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE"`
+	ChallengeEvents   []*ChallengeEvent           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Events            []*Event                    `gorm:"many2many:user_events;constraint:OnDelete:CASCADE"`
+	WeekActivities    map[string]*UserDayActitivy `gorm:"-:all"`
 }
 
 func (u *User) Validate() error {

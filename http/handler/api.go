@@ -67,7 +67,6 @@ func (a *api) Routes(r *chi.Mux) {
 		r.Get("/{username:[a-zA-Z0-9_]+}", a.getUserByUsername)
 		r.Get("/{id:[a-zA-Z0-9\\-]{36}}", a.getUserByID)
 		r.Put("/{id}", a.updateUser)
-		r.Put("/{id}/fcm", a.updateUserFCM)
 		r.Delete("/{id}", a.deleteUser)
 
 		r.Get("/{id}/activities", a.getUserActivities)
@@ -76,9 +75,16 @@ func (a *api) Routes(r *chi.Mux) {
 
 		r.Get("/{id}/challenges", a.getUserChallenges)
 
+		r.Put("/{id}/fcm", a.updateUserFCM)
+
 		r.Route("/{id}/friends", func(r chi.Router) {
 			r.Get("/", a.listFriends)
 			r.Get("/activities", a.listFriendsActivities)
+		})
+
+		r.Route("/{id}/goal", func(r chi.Router) {
+			r.Put("/", a.updateUserGoal)
+			r.Delete("/", a.deleteUserGoal)
 		})
 	})
 
@@ -590,6 +596,35 @@ func (a *api) updateUserFCM(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) updateUserGoal(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	var input model.UpdateUserGoalInput
+	err := json.NewDecoder(r.Body).Decode(&input)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err = a.userService.UpdateGoal(r.Context(), id, &input.Days, &input.DailyDistance)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+func (a *api) deleteUserGoal(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	err := a.userService.UpdateGoal(r.Context(), id, nil, nil)
+	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

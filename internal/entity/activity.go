@@ -24,3 +24,8 @@ type Coordinate struct {
 	Long       float64
 	Order      int
 }
+
+type UserDayActitivy struct {
+	Date     time.Time
+	Distance int
+}
