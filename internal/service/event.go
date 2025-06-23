@@ -3,36 +3,77 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
+	"maps"
+	"math/rand"
+	"slices"
 
 	"runmate_api/internal/entity"
+	"runmate_api/internal/firebase"
 	"runmate_api/internal/repository"
 )
 
 var (
 	ErrEventNotFound = errors.New("event not found")
+
+	newEventNotificationTitles = []string{"Novo evento na área!", "Novo evento para você!"}
 )
+
+func newEventNotification(userName, eventTitle string) *firebase.Notification {
+	return &firebase.Notification{
+		Title: newEventNotificationTitles[rand.Intn(len(newEventNotificationTitles)-1)],
+		Body:  fmt.Sprintf("%s criou um novo evento: %s", userName, eventTitle),
+	}
+}
 
 type Event struct {
 	eventRepo *repository.Event
 	userRepo  *repository.User
+
+	firebaseClient *firebase.Client
 }
 
-func NewEvent(eventRepo *repository.Event, userRepo *repository.User) *Event {
-	return &Event{eventRepo: eventRepo, userRepo: userRepo}
+func NewEvent(eventRepo *repository.Event, userRepo *repository.User, firebaseClient *firebase.Client) *Event {
+	return &Event{
+		eventRepo: eventRepo,
+		userRepo:  userRepo,
+
+		firebaseClient: firebaseClient,
+	}
 }
 
 func (c *Event) Create(ctx context.Context, event *entity.Event) error {
-	user, err := c.userRepo.GetByID(ctx, event.CreatedBy.String())
+	owner, err := c.userRepo.GetByID(ctx, event.CreatedBy.String())
 	if err != nil {
 		return err
 	}
 
-	if user == nil {
+	if owner == nil {
 		return ErrUserNotFound
 	}
 
-	event.Users = []*entity.User{user}
-	return c.eventRepo.Create(ctx, event)
+	event.Users = []*entity.User{owner}
+	err = c.eventRepo.Create(ctx, event)
+	if err != nil {
+		return err
+	}
+
+	users, err := c.userRepo.GetAll(ctx)
+	if err != nil {
+		return err
+	}
+
+	tokens := make(map[string]any, len(users)-1)
+	for _, user := range users {
+		if user.ID == owner.ID {
+			continue
+		}
+
+		tokens[user.FCMToken] = struct{}{}
+	}
+
+	notification := newEventNotification(owner.Name, event.Title)
+	return c.firebaseClient.SendNotification(ctx, notification, slices.Collect(maps.Keys(tokens)))
 }
 
 func (c *Event) GetByID(ctx context.Context, id string) (*entity.Event, error) {
