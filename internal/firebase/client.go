@@ -3,9 +3,11 @@ package firebase
 import (
 	"context"
 	"fmt"
+	"runmate_api/config"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/messaging"
+	"google.golang.org/api/option"
 )
 
 type Client struct {
@@ -13,7 +15,12 @@ type Client struct {
 }
 
 func NewClient() (*Client, error) {
-	app, err := firebase.NewApp(context.Background(), nil)
+	var options []option.ClientOption
+	if config.Production() {
+		options = append(options, option.WithCredentialsJSON(config.FirebaseCredentials()))
+	}
+
+	app, err := firebase.NewApp(context.Background(), nil, options...)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing app: %v", err)
 	}

@@ -77,3 +77,7 @@ func KafkaAccessKey() string {
 func KafkaPassword() string {
 	return fmt.Sprintf("Endpoint=sb://%s/;SharedAccessKeyName=%s;SharedAccessKey=%s", KafkaHost(), KafkaAccessKeyName(), KafkaAccessKey())
 }
+
+func FirebaseCredentials() []byte {
+	return []byte(os.Getenv("FIREBASE_CREDENTIALS"))
+}
