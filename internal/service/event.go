@@ -21,7 +21,7 @@ var (
 
 func newEventNotification(userName, eventTitle string) *firebase.Notification {
 	return &firebase.Notification{
-		Title: newEventNotificationTitles[rand.Intn(len(newEventNotificationTitles)-1)],
+		Title: newEventNotificationTitles[rand.Intn(len(newEventNotificationTitles))],
 		Body:  fmt.Sprintf("%s criou um novo evento: %s", userName, eventTitle),
 	}
 }
