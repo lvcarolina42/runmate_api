@@ -74,7 +74,7 @@ func (e *Event) GetAllActiveWithoutUser(ctx context.Context, user *entity.User) 
 
 func (e *Event) GetAllActiveByUser(ctx context.Context, user *entity.User) ([]*entity.Event, error) {
 	var events []*entity.Event
-	err := e.db.WithContext(ctx).Model(&user).Where("date >= NOW()").Association("Events").Find(&events)
+	err := e.db.WithContext(ctx).Model(&user).Where("date >= NOW()").Preload("Users").Association("Events").Find(&events)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user %s active events: %v", user.ID.String(), err)
 	}
@@ -84,7 +84,7 @@ func (e *Event) GetAllActiveByUser(ctx context.Context, user *entity.User) ([]*e
 
 func (e *Event) GetAllByUser(ctx context.Context, user *entity.User) ([]*entity.Event, error) {
 	var events []*entity.Event
-	err := e.db.WithContext(ctx).Model(&user).Association("Events").Find(&events)
+	err := e.db.WithContext(ctx).Model(&user).Preload("Users").Association("Events").Find(&events)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user %s events: %v", user.ID.String(), err)
 	}
