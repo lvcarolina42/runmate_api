@@ -65,7 +65,7 @@ func (c *Event) Create(ctx context.Context, event *entity.Event) error {
 
 	tokens := make(map[string]any, len(users)-1)
 	for _, user := range users {
-		if user.ID == owner.ID {
+		if user.ID == owner.ID || user.FCMToken == "" {
 			continue
 		}
 

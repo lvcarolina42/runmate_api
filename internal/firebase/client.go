@@ -42,7 +42,7 @@ func (c *Client) SendNotification(ctx context.Context, notification *Notificatio
 			Token:        token,
 		})
 		if err != nil {
-			return fmt.Errorf("error sending message: %v", err)
+			return fmt.Errorf("error sending notification: %v", err)
 		}
 	}
 
