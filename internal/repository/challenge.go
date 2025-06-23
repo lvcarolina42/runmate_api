@@ -28,7 +28,7 @@ func (c *Challenge) Create(ctx context.Context, challenge *entity.Challenge) err
 
 func (c *Challenge) GetByID(ctx context.Context, id string) (*entity.Challenge, error) {
 	var challenge entity.Challenge
-	result := c.db.WithContext(ctx).Where("id = ?", id).First(&challenge)
+	result := c.db.WithContext(ctx).Preload("Users").Where("id = ?", id).First(&challenge)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get challenge %s: %v", id, result.Error)
 	}
@@ -38,7 +38,7 @@ func (c *Challenge) GetByID(ctx context.Context, id string) (*entity.Challenge, 
 
 func (c *Challenge) GetAllActive(ctx context.Context) ([]*entity.Challenge, error) {
 	var challenges []*entity.Challenge
-	result := c.db.WithContext(ctx).Where("end_date IS NULL OR end_date > NOW()").Find(&challenges)
+	result := c.db.WithContext(ctx).Preload("Users").Where("end_date IS NULL OR end_date > NOW()").Find(&challenges)
 	if result.Error != nil {
 		return nil, fmt.Errorf("failed to get active challenges: %v", result.Error)
 	}
@@ -58,6 +58,7 @@ func (c *Challenge) Update(ctx context.Context, challenge *entity.Challenge) err
 func (c *Challenge) GetAllActiveWithoutUser(ctx context.Context, user *entity.User) ([]*entity.Challenge, error) {
 	var challenges []*entity.Challenge
 	err := c.db.WithContext(ctx).
+		Preload("Users").
 		Table("challenges").
 		Select("challenges.*").
 		Joins("LEFT JOIN user_challenges ON challenges.id = user_challenges.challenge_id AND user_challenges.user_id = ?", user.ID).
@@ -73,7 +74,7 @@ func (c *Challenge) GetAllActiveWithoutUser(ctx context.Context, user *entity.Us
 
 func (c *Challenge) GetAllActiveByUser(ctx context.Context, user *entity.User) ([]*entity.Challenge, error) {
 	var challenges []*entity.Challenge
-	err := c.db.WithContext(ctx).Model(&user).Where("end_date IS NULL OR end_date > NOW()").Association("Challenges").Find(&challenges)
+	err := c.db.WithContext(ctx).Model(&user).Where("end_date IS NULL OR end_date > NOW()").Preload("Users").Association("Challenges").Find(&challenges)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get challenges: %v", err)
 	}
@@ -83,7 +84,7 @@ func (c *Challenge) GetAllActiveByUser(ctx context.Context, user *entity.User) (
 
 func (c *Challenge) GetAllByUser(ctx context.Context, user *entity.User) ([]*entity.Challenge, error) {
 	var challenges []*entity.Challenge
-	err := c.db.WithContext(ctx).Model(&user).Association("Challenges").Find(&challenges)
+	err := c.db.WithContext(ctx).Model(&user).Preload("Users").Association("Challenges").Find(&challenges)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get challenges: %v", err)
 	}

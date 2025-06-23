@@ -2,9 +2,12 @@ package service
 
 import (
 	"context"
+	"maps"
+	"slices"
 	"sort"
 
 	"runmate_api/internal/entity"
+	"runmate_api/internal/firebase"
 	"runmate_api/internal/repository"
 )
 
@@ -12,19 +15,27 @@ type Activity struct {
 	activityRepo  *repository.Activity
 	challengeRepo *repository.Challenge
 	userRepo      *repository.User
+
+	firebaseClient *firebase.Client
 }
 
-func NewActivity(activityRepo *repository.Activity, challengeRepo *repository.Challenge, userRepo *repository.User) *Activity {
-	return &Activity{activityRepo: activityRepo, challengeRepo: challengeRepo, userRepo: userRepo}
+func NewActivity(activityRepo *repository.Activity, challengeRepo *repository.Challenge, userRepo *repository.User, firebaseClient *firebase.Client) *Activity {
+	return &Activity{
+		activityRepo:  activityRepo,
+		challengeRepo: challengeRepo,
+		userRepo:      userRepo,
+
+		firebaseClient: firebaseClient,
+	}
 }
 
 func (a *Activity) Create(ctx context.Context, activity *entity.Activity) error {
-	user, err := a.userRepo.GetByID(ctx, activity.UserID.String())
+	owner, err := a.userRepo.GetByID(ctx, activity.UserID.String())
 	if err != nil {
 		return err
 	}
 
-	if user == nil {
+	if owner == nil {
 		return ErrUserNotFound
 	}
 
@@ -37,25 +48,25 @@ func (a *Activity) Create(ctx context.Context, activity *entity.Activity) error 
 		return err
 	}
 
-	user.XP += activity.Distance
-	err = a.userRepo.Update(ctx, user)
+	owner.XP += activity.Distance
+	err = a.userRepo.Update(ctx, owner)
 	if err != nil {
 		return err
 	}
 
-	userChallenges, err := a.challengeRepo.GetAllActiveByUser(ctx, user)
+	ownerChallenges, err := a.challengeRepo.GetAllActiveByUser(ctx, owner)
 	if err != nil {
 		return err
 	}
 
-	for _, userChallenge := range userChallenges {
-		if activity.Date.Before(userChallenge.StartDate) || (userChallenge.EndDate != nil && activity.Date.After(*userChallenge.EndDate)) {
+	for _, ownerChallenge := range ownerChallenges {
+		if activity.Date.Before(ownerChallenge.StartDate) || (ownerChallenge.EndDate != nil && activity.Date.After(*ownerChallenge.EndDate)) {
 			continue
 		}
 
-		err = a.challengeRepo.AddEvent(ctx, userChallenge, &entity.ChallengeEvent{
-			ChallengeID: userChallenge.ID,
-			UserID:      user.ID,
+		err = a.challengeRepo.AddEvent(ctx, ownerChallenge, &entity.ChallengeEvent{
+			ChallengeID: ownerChallenge.ID,
+			UserID:      owner.ID,
 			Distance:    activity.Distance,
 			Date:        activity.Date,
 		})
@@ -63,8 +74,18 @@ func (a *Activity) Create(ctx context.Context, activity *entity.Activity) error 
 			return err
 		}
 
-		if userChallenge.Type == entity.ChallengeTypeDistance {
-			userChallengeEvents, err := a.challengeRepo.GetAllEventsByUser(ctx, userChallenge, user)
+		tokens := make(map[string]any, len(ownerChallenge.Users)-1)
+		for _, user := range ownerChallenge.Users {
+			if user.ID == owner.ID || owner.FCMToken == "" {
+				continue
+			}
+
+			tokens[owner.FCMToken] = struct{}{}
+		}
+
+		notificationFunc := newChallengeActivityNotification
+		if ownerChallenge.Type == entity.ChallengeTypeDistance {
+			userChallengeEvents, err := a.challengeRepo.GetAllEventsByUser(ctx, ownerChallenge, owner)
 			if err != nil {
 				return err
 			}
@@ -74,13 +95,21 @@ func (a *Activity) Create(ctx context.Context, activity *entity.Activity) error 
 				total += userChallengeEvent.Distance
 			}
 
-			if total >= *userChallenge.TotalDistance {
-				userChallenge.EndDate = &activity.Date
-				err = a.challengeRepo.Update(ctx, userChallenge)
+			if total >= *ownerChallenge.TotalDistance {
+				ownerChallenge.EndDate = &activity.Date
+				err = a.challengeRepo.Update(ctx, ownerChallenge)
 				if err != nil {
 					return err
 				}
+
+				notificationFunc = endChallengeNotification
 			}
+		}
+
+		notification := notificationFunc(owner.Name, ownerChallenge.Title)
+		err = a.firebaseClient.SendNotification(ctx, notification, slices.Collect(maps.Keys(tokens)))
+		if err != nil {
+			return err
 		}
 	}
 

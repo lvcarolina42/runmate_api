@@ -3,14 +3,35 @@ package service
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"runmate_api/internal/entity"
+	"runmate_api/internal/firebase"
 	"runmate_api/internal/repository"
+)
+
+const (
+	newChallengeActivityNotificationTitle = "Não fique pra trás!"
+	endChallengeNotificationTitle         = "Que pena! Um desafio acabou!"
 )
 
 var (
 	ErrChallengeNotFound = errors.New("challenge not found")
 )
+
+func newChallengeActivityNotification(userName, challengeTitle string) *firebase.Notification {
+	return &firebase.Notification{
+		Title: newChallengeActivityNotificationTitle,
+		Body:  fmt.Sprintf("%s acabou de postar uma nova atividade no desafio '%s'", userName, challengeTitle),
+	}
+}
+
+func endChallengeNotification(userName, challengeTitle string) *firebase.Notification {
+	return &firebase.Notification{
+		Title: endChallengeNotificationTitle,
+		Body:  fmt.Sprintf("%s acabou de completar o desafio '%s'", userName, challengeTitle),
+	}
+}
 
 type Challenge struct {
 	challengeRepo *repository.Challenge
