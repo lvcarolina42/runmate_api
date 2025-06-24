@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	newChallengeActivityNotificationTitle = "Não fique pra trás!"
-	endChallengeNotificationTitle         = "Que pena! Um desafio acabou!"
+	newChallengeActivityNotificationTitle = "Não fique pra trás! 🏃💨🏃"
+	endChallengeNotificationTitle         = "Fim do desafio! 🏃🏁"
 )
 
 var (
@@ -22,14 +22,14 @@ var (
 func newChallengeActivityNotification(userName, challengeTitle string) *firebase.Notification {
 	return &firebase.Notification{
 		Title: newChallengeActivityNotificationTitle,
-		Body:  fmt.Sprintf("%s acabou de postar uma nova atividade no desafio '%s'", userName, challengeTitle),
+		Body:  fmt.Sprintf("%s acabou de postar uma nova atividade em %s", userName, challengeTitle),
 	}
 }
 
 func endChallengeNotification(userName, challengeTitle string) *firebase.Notification {
 	return &firebase.Notification{
 		Title: endChallengeNotificationTitle,
-		Body:  fmt.Sprintf("%s acabou de completar o desafio '%s'", userName, challengeTitle),
+		Body:  fmt.Sprintf("%s acabou de vencer %s", userName, challengeTitle),
 	}
 }
 
