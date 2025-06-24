@@ -12,7 +12,7 @@ import (
 
 func newChallengeMessageNotification(userName, challengeTitle, message string) *firebase.Notification {
 	return &firebase.Notification{
-		Title: fmt.Sprintf("%s ▸ %s", userName, challengeTitle),
+		Title: fmt.Sprintf("💬 %s ▸ %s", userName, challengeTitle),
 		Body:  message,
 	}
 }
