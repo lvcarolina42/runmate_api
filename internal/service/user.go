@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"runmate_api/internal/entity"
@@ -28,27 +27,27 @@ func (u *User) enrichUserWithWeekActivities(ctx context.Context, user *entity.Us
 	todayWithoutHour := today.Truncate(24 * time.Hour)
 	offset := (int(time.Sunday) - int(todayWithoutHour.Weekday()) - 7) % 7
 	start := todayWithoutHour.Add(time.Duration(offset*24) * time.Hour)
+	end := start.AddDate(0, 0, 7)
 
 	activities, err := u.activityRepo.GetByUserIDAndDateRange(ctx, user.ID.String(), start, today)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("activities", activities)
 	weekActivities := make(map[string]*entity.UserDayActitivy, (-offset + 1))
-	for _, activity := range activities {
-		dateKey := activity.Date.Format("2006-01-02")
-		if dayActivity, ok := weekActivities[dateKey]; ok {
-			dayActivity.Distance += activity.Distance
-		} else {
-			weekActivities[dateKey] = &entity.UserDayActitivy{
-				Date:     activity.Date,
-				Distance: activity.Distance,
-			}
+	for i := start; i.Before(end); i = i.AddDate(0, 0, 1) {
+		dateKey := i.Format("2006-01-02")
+		weekActivities[dateKey] = &entity.UserDayActitivy{
+			Date:     i,
+			Distance: 0,
 		}
 	}
 
-	fmt.Println("weekActivities", weekActivities)
+	for _, activity := range activities {
+		dateKey := activity.Date.Format("2006-01-02")
+		weekActivities[dateKey].Distance += activity.Distance
+	}
+
 	user.WeekActivities = weekActivities
 	return nil
 }
