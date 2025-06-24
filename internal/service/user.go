@@ -9,6 +9,8 @@ import (
 	"runmate_api/internal/repository"
 )
 
+const weekdays = 7
+
 var (
 	ErrUserNotFound = errors.New("user not found")
 )
@@ -25,27 +27,36 @@ func NewUser(activityRepo *repository.Activity, userRepo *repository.User) *User
 func (u *User) enrichUserWithWeekActivities(ctx context.Context, user *entity.User) error {
 	today := time.Now()
 	todayWithoutHour := today.Truncate(24 * time.Hour)
-	offset := (int(time.Sunday) - int(todayWithoutHour.Weekday()) - 7) % 7
+	offset := (int(time.Sunday) - int(todayWithoutHour.Weekday()) - weekdays) % weekdays
 	start := todayWithoutHour.Add(time.Duration(offset*24) * time.Hour)
-	end := start.AddDate(0, 0, 7)
+	end := start.AddDate(0, 0, weekdays)
 
 	activities, err := u.activityRepo.GetByUserIDAndDateRange(ctx, user.ID.String(), start, today)
 	if err != nil {
 		return err
 	}
 
-	weekActivities := make(map[string]*entity.UserDayActitivy, (-offset + 1))
-	for i := start; i.Before(end); i = i.AddDate(0, 0, 1) {
-		dateKey := i.Format("2006-01-02")
-		weekActivities[dateKey] = &entity.UserDayActitivy{
-			Date:     i,
-			Distance: 0,
+	weekActivitiesMap := make(map[string]*entity.UserDayActitivy, weekdays)
+	for _, activity := range activities {
+		dateKey := activity.Date.Format("2006-01-02")
+		if day, ok := weekActivitiesMap[dateKey]; ok {
+			day.Distance += activity.Distance
+		} else {
+			weekActivitiesMap[dateKey] = &entity.UserDayActitivy{
+				Date:     activity.Date,
+				Distance: activity.Distance,
+			}
 		}
 	}
 
-	for _, activity := range activities {
-		dateKey := activity.Date.Format("2006-01-02")
-		weekActivities[dateKey].Distance += activity.Distance
+	weekActivities := make([]*entity.UserDayActitivy, 0, weekdays)
+	for i := start; i.Before(end); i = i.AddDate(0, 0, 1) {
+		dateKey := i.Format("2006-01-02")
+		if day, ok := weekActivitiesMap[dateKey]; ok {
+			weekActivities = append(weekActivities, day)
+		} else {
+			weekActivities = append(weekActivities, &entity.UserDayActitivy{Date: i})
+		}
 	}
 
 	user.WeekActivities = weekActivities

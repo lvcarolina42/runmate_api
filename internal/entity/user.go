@@ -32,13 +32,13 @@ type User struct {
 	Birthdate         time.Time
 	CreatedAt         time.Time
 	UpdatedAt         time.Time
-	Activities        []*Activity                 `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Friends           []*User                     `gorm:"many2many:user_friends;constraint:OnDelete:CASCADE"`
-	Challenges        []*Challenge                `gorm:"many2many:user_challenges;constraint:OnDelete:CASCADE"`
-	CreatedChallenges []*Challenge                `gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE"`
-	ChallengeEvents   []*ChallengeEvent           `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
-	Events            []*Event                    `gorm:"many2many:user_events;constraint:OnDelete:CASCADE"`
-	WeekActivities    map[string]*UserDayActitivy `gorm:"-:all"`
+	Activities        []*Activity        `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Friends           []*User            `gorm:"many2many:user_friends;constraint:OnDelete:CASCADE"`
+	Challenges        []*Challenge       `gorm:"many2many:user_challenges;constraint:OnDelete:CASCADE"`
+	CreatedChallenges []*Challenge       `gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE"`
+	ChallengeEvents   []*ChallengeEvent  `gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE"`
+	Events            []*Event           `gorm:"many2many:user_events;constraint:OnDelete:CASCADE"`
+	WeekActivities    []*UserDayActitivy `gorm:"-:all"`
 }
 
 func (u *User) Validate() error {

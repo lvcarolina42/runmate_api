@@ -6,10 +6,22 @@ import (
 	"runmate_api/internal/entity"
 )
 
+type GoalDayActivity struct {
+	Date     string `json:"date"`
+	Distance int    `json:"distance"`
+}
+
+func newGoalDayActivityFromEntity(activity *entity.UserDayActitivy) *GoalDayActivity {
+	return &GoalDayActivity{
+		Date:     activity.Date.Format("2006-01-02"),
+		Distance: activity.Distance,
+	}
+}
+
 type Goal struct {
-	Days           *int           `json:"days,omitempty"`
-	DailyDistance  *int           `json:"daily_distance,omitempty"`
-	WeekActivities map[string]int `json:"week_activities,omitempty"`
+	Days           *int               `json:"days,omitempty"`
+	DailyDistance  *int               `json:"daily_distance,omitempty"`
+	WeekActivities []*GoalDayActivity `json:"week_activities,omitempty"`
 }
 
 type User struct {
@@ -26,12 +38,9 @@ type User struct {
 }
 
 func NewUserFromEntity(user *entity.User) *User {
-	var weekActivities map[string]int
-	if user.WeekActivities != nil {
-		weekActivities = make(map[string]int)
-		for date, activity := range user.WeekActivities {
-			weekActivities[date] = activity.Distance
-		}
+	weekActivities := make([]*GoalDayActivity, 0, 7)
+	for _, activity := range user.WeekActivities {
+		weekActivities = append(weekActivities, newGoalDayActivityFromEntity(activity))
 	}
 
 	return &User{
