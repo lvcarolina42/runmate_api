@@ -191,7 +191,7 @@ func (c *Consumer) Start(ctx context.Context, challengeID string) {
 					continue
 				}
 
-				if err := c.messageService.Create(ctx, msg); err != nil {
+				if err := c.messageService.Create(ctx, msg, user); err != nil {
 					log.Println("Failed to save message:", err)
 				}
 

@@ -57,7 +57,7 @@ func main() {
 	activityService := service.NewActivity(activityRepo, challengeRepo, userRepo, firebaseClient)
 	challengeService := service.NewChallenge(challengeRepo, userRepo)
 	eventService := service.NewEvent(eventRepo, userRepo, firebaseClient)
-	messageService := service.NewMessage(challengeRepo, messageRepo, userRepo)
+	messageService := service.NewMessage(challengeRepo, messageRepo, userRepo, firebaseClient)
 	userService := service.NewUser(activityRepo, userRepo)
 
 	chatHub := chat.NewHub()
