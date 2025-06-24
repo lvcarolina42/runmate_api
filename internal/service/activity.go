@@ -76,11 +76,11 @@ func (a *Activity) Create(ctx context.Context, activity *entity.Activity) error 
 
 		tokens := make(map[string]any, len(ownerChallenge.Users)-1)
 		for _, user := range ownerChallenge.Users {
-			if user.ID == owner.ID || owner.FCMToken == "" {
+			if user.ID == owner.ID || user.FCMToken == "" {
 				continue
 			}
 
-			tokens[owner.FCMToken] = struct{}{}
+			tokens[user.FCMToken] = struct{}{}
 		}
 
 		notificationFunc := newChallengeActivityNotification
